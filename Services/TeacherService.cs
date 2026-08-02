@@ -17,11 +17,23 @@ namespace UNIOOP.App.Services
 
         public async Task<List<TeacherResponseDto>> GetAllAsync()
         {
-            return await (
+            return await GetTeacherResponseQuery()
+                .OrderBy(teacher => teacher.TeacherID)
+                .ToListAsync();
+        }
+        public async Task<TeacherResponseDto?> GetSingleAsync(int teacherId)
+        {
+            return await GetTeacherResponseQuery()
+                .Where(teacher => teacher.TeacherID == teacherId)
+                .SingleOrDefaultAsync();
+        }
+
+        private IQueryable<TeacherResponseDto> GetTeacherResponseQuery()
+        {
+            IQueryable<TeacherResponseDto> query =
                 from teacher in _entityFramework.Teachers.AsNoTracking()
                 join university in _entityFramework.Universities.AsNoTracking()
                     on teacher.UniversityID equals university.UniversityID
-                orderby teacher.TeacherID
                 select new TeacherResponseDto
                 {
                     TeacherID = teacher.TeacherID,
@@ -35,33 +47,8 @@ namespace UNIOOP.App.Services
                     MinistryDegreeID = teacher.MinistryDegreeID,
                     UniversityID = teacher.UniversityID,
                     UniversityName = university.UniversityName
-                }).ToListAsync();
-        }
-        public async Task<TeacherResponseDto?> GetSingleAsync(int teacherId)
-        {
-            return await (
-             from teacher in _entityFramework.Teachers.AsNoTracking()
-
-             join university in
-                 _entityFramework.Universities.AsNoTracking()
-                 on teacher.UniversityID equals university.UniversityID
-
-             where teacher.TeacherID == teacherId
-
-             select new TeacherResponseDto
-             {
-                 TeacherID = teacher.TeacherID,
-                 FName = teacher.FName,
-                 LName = teacher.LName,
-                 DateOfBirth = teacher.DateOfBirth,
-                 Email = teacher.Email,
-                 Department = teacher.Department,
-                 Salary = teacher.Salary,
-
-                 MinistryDegreeID = teacher.MinistryDegreeID,
-                 UniversityID = teacher.UniversityID,
-                 UniversityName = university.UniversityName
-             }).SingleOrDefaultAsync();
+                };
+            return query;
         }
         public async Task<TeacherResponseDto> CreateAsync(CreateTeacherDto dto)
         {
