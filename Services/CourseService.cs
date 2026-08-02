@@ -63,7 +63,7 @@ namespace UNIOOP.App.Services
                     TeacherName = teacher == null ? null : teacher.FName + " " + teacher.LName
                 }).SingleOrDefaultAsync();
         }
-        public async Task<CourseResponseDto?> CreateAsync(CreateCourseDto dto)
+        public async Task<CourseResponseDto> CreateAsync(CreateCourseDto dto)
         {
             long? teacherPersonnelId = null;
 
@@ -86,7 +86,15 @@ namespace UNIOOP.App.Services
 
             await _entityFramework.SaveChangesAsync();
 
-            return await GetSingleAsync(course.CourseID);
+            CourseResponseDto? createdCourse = await GetSingleAsync(course.CourseID);
+
+            if (createdCourse is null)
+            {
+                throw new InvalidOperationException(
+                    "The course was created but could not be retrieved.");
+            }
+
+            return createdCourse;
         }
         public async Task<bool> UpdateAsync(int courseId, UpdateCourseDto dto)
         {

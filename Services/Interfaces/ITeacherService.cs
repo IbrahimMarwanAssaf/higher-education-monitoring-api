@@ -6,9 +6,8 @@ namespace UNIOOP.App.Services.Interfaces
     {
         Task<List<TeacherResponseDto>> GetAllAsync();
         Task<TeacherResponseDto?> GetSingleAsync(int teacherId);
-        Task<TeacherResponseDto?> CreateAsync(CreateTeacherDto dto);
+        Task<TeacherResponseDto> CreateAsync(CreateTeacherDto dto);
         Task<bool> UpdateAsync(int teacherId, UpdateTeacherDto dto);
         Task<bool> DeleteAsync(int teacherId);
-        // Task<bool> HasDependenciesAsync(int teacherId);
     }
 }

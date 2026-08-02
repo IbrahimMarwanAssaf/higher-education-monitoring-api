@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace UNIOOP.App.DTOs.Enrollments
+namespace UNIOOP.App.Dtos.Enrollments
 {
     public class CreateEnrollmentDto
     {

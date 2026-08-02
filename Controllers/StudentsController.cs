@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.Students;
-using UNIOOP.App.Models;
+using UNIOOP.App.Helpers;
 using UNIOOP.App.Services.Interfaces;
 
 namespace UNIOOP.APP.Controllers;
@@ -10,9 +10,11 @@ namespace UNIOOP.APP.Controllers;
 public class StudentController : ControllerBase
 {
     private readonly IStudentService _studentService;
-    public StudentController(IStudentService studentService)
+    private readonly IDatabaseValidationHelper _validationHelper;
+    public StudentController(IStudentService studentService, IDatabaseValidationHelper validationHelper)
     {
         _studentService = studentService;
+        _validationHelper = validationHelper;
     }
 
     [HttpGet("GetAll")]
@@ -40,17 +42,24 @@ public class StudentController : ControllerBase
     }
 
     [HttpPost("Create")]
-    public async Task<ActionResult<Student>> Create(CreateStudentDto dto)
+    public async Task<ActionResult<StudentResponseDto>> Create(CreateStudentDto dto)
     {
-        StudentResponseDto? student = await _studentService.CreateAsync(dto);
-
-        if (student is null)
+        if (!await _validationHelper.UniversityExistsAsync(dto.UniversityID))
         {
-            return BadRequest(new
-            {
-                message = "Unable to create student."
-            });
+            return BadRequest(new { message = "The selected university does not exist." });
         }
+
+        if (await _validationHelper.SSNExistsAsync(dto.SSN))
+        {
+            return Conflict(new { message = "The SSN is already in use." });
+        }
+
+        if (await _validationHelper.StudentEmailExistsAsync(dto.Email))
+        {
+            return Conflict(new { message = "The email is already in use." });
+        }
+
+        StudentResponseDto student = await _studentService.CreateAsync(dto);
 
         return CreatedAtAction(nameof(GetSingle), new { studentId = student.StudentID }, student);
     }
@@ -58,17 +67,36 @@ public class StudentController : ControllerBase
     [HttpPut("Update/{studentId}")]
     public async Task<ActionResult> Update(int studentId, UpdateStudentDto dto)
     {
-        StudentResponseDto? existingStudent = await _studentService.GetSingleAsync(studentId);
+        if (!await _validationHelper.StudentExistsAsync(studentId))
+        {
+            return NotFound();
+        }
 
-        if (existingStudent is null)
+        if (await _validationHelper.StudentEmailExistsAsync(dto.Email, studentId))
+        {
+            return Conflict(new
+            {
+                message = "Another person already uses this email."
+            });
+        }
+
+        if (!await _validationHelper.UniversityExistsAsync(dto.UniversityID))
+        {
+            return BadRequest(new
+            {
+                message = "The selected university does not exist."
+            });
+        }
+
+        bool updated = await _studentService.UpdateAsync(studentId, dto);
+
+        if (!updated)
         {
             return NotFound(new
             {
                 message = $"Student with ID: {studentId} was not found."
             });
         }
-
-        await _studentService.UpdateAsync(studentId, dto);
 
         return NoContent();
     }
@@ -76,17 +104,28 @@ public class StudentController : ControllerBase
     [HttpDelete("Delete/{studentId}")]
     public async Task<ActionResult> Delete(int studentId)
     {
-        StudentResponseDto? existingStudent = await _studentService.GetSingleAsync(studentId);
+        if (!await _validationHelper.StudentExistsAsync(studentId))
+        {
+            return NotFound();
+        }
 
-        if (existingStudent is null)
+        if (await _validationHelper.StudentHasEnrollmentsAsync(studentId))
+        {
+            return Conflict(new
+            {
+                message = "The student cannot be deleted while enrolled in courses."
+            });
+        }
+
+        bool deleted = await _studentService.DeleteAsync(studentId);
+
+        if (!deleted)
         {
             return NotFound(new
             {
                 message = $"Student with ID: {studentId} was not found."
             });
         }
-
-        await _studentService.DeleteAsync(studentId);
 
         return NoContent();
     }

@@ -37,7 +37,7 @@ namespace UNIOOP.App.Services
                 .SingleOrDefaultAsync();
         }
 
-        public async Task<University?> CreateAsync(UniversityDto dto)
+        public async Task<University> CreateAsync(UniversityDto dto)
         {
             var university = new University
             {
@@ -81,27 +81,6 @@ namespace UNIOOP.App.Services
             await _entityFramework.SaveChangesAsync();
 
             return true;
-        }
-
-        public async Task<bool> HasDependenciesAsync(int universityId)
-        {
-            bool hasStudents = await _entityFramework.Students.AnyAsync(s => s.UniversityID == universityId);
-
-            if (hasStudents)
-            {
-                return true;
-            }
-
-            bool hasTeachers = await _entityFramework.Teachers.AnyAsync(t => t.UniversityID == universityId);
-
-            if (hasTeachers)
-            {
-                return true;
-            }
-
-            bool hasCourses = await _entityFramework.Courses.AnyAsync(c => c.UniversityID == universityId);
-
-            return hasCourses;
         }
     }
 }

@@ -45,7 +45,7 @@ namespace UNIOOP.App.Services
                  Email = governmentOfficer.Email
              }).SingleOrDefaultAsync();
         }
-        public async Task<GovernmentOfficerResponseDto?> CreateAsync(CreateGovernmentOfficerDto dto)
+        public async Task<GovernmentOfficerResponseDto> CreateAsync(CreateGovernmentOfficerDto dto)
         {
             var governmentOfficer = new GovernmentOfficer
             {
@@ -59,7 +59,15 @@ namespace UNIOOP.App.Services
 
             await _entityFramework.SaveChangesAsync();
 
-            return await GetSingleAsync(governmentOfficer.OfficerID);
+            GovernmentOfficerResponseDto? createdOfficer = await GetSingleAsync(governmentOfficer.OfficerID);
+
+            if (createdOfficer is null)
+            {
+                throw new InvalidOperationException(
+                    "The government officer was created but could not be retrieved.");
+            }
+
+            return createdOfficer;
         }
         public async Task<bool> UpdateAsync(int governmentOfficerId, UpdateGovernmentOfficerDto dto)
         {
@@ -97,11 +105,6 @@ namespace UNIOOP.App.Services
 
             return true;
         }
-
-        // public async Task<bool> HasDependenciesAsync(int governmentOfficerId)
-        // {
-
-        // }
 
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.Universities;
+using UNIOOP.App.Helpers;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
 
@@ -10,9 +11,11 @@ namespace UNIOOP.APP.Controllers;
 public class UniversityController : ControllerBase
 {
     private readonly IUniversityService _universityService;
-    public UniversityController(IUniversityService universityService)
+    private readonly IDatabaseValidationHelper _validationHelper;
+    public UniversityController(IUniversityService universityService, IDatabaseValidationHelper validationHelper)
     {
         _universityService = universityService;
+        _validationHelper = validationHelper;
     }
 
     [HttpGet("GetAll")]
@@ -42,35 +45,48 @@ public class UniversityController : ControllerBase
     [HttpPost("Create")]
     public async Task<ActionResult<University>> Create(UniversityDto dto)
     {
-        University? university = await _universityService.CreateAsync(dto);
 
-        if (university is null)
+        if (await _validationHelper.UniversityNameExistsAsync(dto.UniversityName))
         {
-            return BadRequest(new
+            return Conflict(new
             {
-                message = "Unable to create university."
+                message = "A university with this name already exists."
             });
         }
+
+        University university = await _universityService.CreateAsync(dto);
 
         return CreatedAtAction(nameof(GetSingle), new { universityId = university.UniversityID }, university); // [201 + location + body]
                                                                                                                //OR
                                                                                                                //return Ok(university); //[200 + body]
     }
 
-    [HttpPut("Update")]
+    [HttpPut("Update/{universityId}")]
     public async Task<ActionResult> Update(int universityId, UniversityDto dto)
     {
-        University? existingUniversity = await _universityService.GetSingleAsync(universityId);
 
-        if (existingUniversity is null)
+        if (!await _validationHelper.UniversityExistsAsync(universityId))
         {
-            return NotFound(new
+            return NotFound();
+        }
+
+        if (await _validationHelper.UniversityNameExistsAsync(dto.UniversityName, universityId))
+        {
+            return Conflict(new
             {
-                message = $"University {universityId} was not found."
+                message = "Another university already uses this name."
             });
         }
 
-        await _universityService.UpdateAsync(universityId, dto);
+        bool updated = await _universityService.UpdateAsync(universityId, dto);
+
+        if (!updated)
+        {
+            return NotFound(new
+            {
+                message = $"University with ID: {universityId} was not found."
+            });
+        }
 
         return NoContent();
     }
@@ -78,26 +94,28 @@ public class UniversityController : ControllerBase
     [HttpDelete("Delete/{universityId}")]
     public async Task<IActionResult> Delete(int universityId)
     {
-        University? university = await _universityService.GetSingleAsync(universityId);
-        if (university is null)
+        if (!await _validationHelper.UniversityExistsAsync(universityId))
         {
-            return NotFound(new
-            {
-                message = $"University {universityId} was not found."
-            });
+            return NotFound();
         }
 
-        bool hasDependencies = await _universityService.HasDependenciesAsync(universityId);
-
-        if (hasDependencies)
+        if (await _validationHelper.UniversityHasDependenciesAsync(universityId))
         {
             return Conflict(new
             {
-                message = "This university cannot be deleted because students, teachers, or courses reference it."
+                message = "The university has related students, teachers or courses."
             });
         }
 
-        await _universityService.DeleteAsync(universityId);
+        bool deleted = await _universityService.DeleteAsync(universityId);
+
+        if (!deleted)
+        {
+            return NotFound(new
+            {
+                message = $"University with ID: {universityId} was not found."
+            });
+        }
 
         return NoContent();
     }

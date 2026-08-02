@@ -1,13 +1,9 @@
-using UNIOOP.App.DTOs.Enrollments;
+using UNIOOP.App.Dtos.Enrollments;
 
 namespace UNIOOP.App.Services.Interfaces
 {
     public interface IEnrollmentService
     {
-        // Task<bool> StudentExistsAsync(int studentId);
-        // Task<bool> CourseExistsAsync(int courseId);
-        // Task<bool> StudentAndCourseSameUniversityAsync(int studentId, int courseId);
-        // Task<bool> EnrollmentExistsAsync(int studentId, int courseId);
         Task<EnrollmentResponseDto?> GetSingleAsync(int studentId, int courseId);
         Task<List<EnrollmentResponseDto>> GetStudentCoursesAsync(int studentId);
         Task<List<EnrollmentResponseDto>> GetCourseStudentsAsync(int courseId);

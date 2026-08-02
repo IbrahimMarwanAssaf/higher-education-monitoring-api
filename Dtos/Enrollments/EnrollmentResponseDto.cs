@@ -1,4 +1,4 @@
-namespace UNIOOP.App.DTOs.Enrollments
+namespace UNIOOP.App.Dtos.Enrollments
 {
     public class EnrollmentResponseDto
     {

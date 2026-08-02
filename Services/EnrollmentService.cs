@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using UNIOOP.App.Data;
-using UNIOOP.App.DTOs.Enrollments;
+using UNIOOP.App.Dtos.Enrollments;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
 

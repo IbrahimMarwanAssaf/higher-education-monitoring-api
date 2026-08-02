@@ -63,7 +63,7 @@ namespace UNIOOP.App.Services
                  UniversityName = university.UniversityName
              }).SingleOrDefaultAsync();
         }
-        public async Task<TeacherResponseDto?> CreateAsync(CreateTeacherDto dto)
+        public async Task<TeacherResponseDto> CreateAsync(CreateTeacherDto dto)
         {
             var teacher = new Teacher
             {
@@ -81,7 +81,15 @@ namespace UNIOOP.App.Services
 
             await _entityFramework.SaveChangesAsync();
 
-            return await GetSingleAsync(teacher.TeacherID);
+            TeacherResponseDto? createdTeacher = await GetSingleAsync(teacher.TeacherID);
+
+            if (createdTeacher is null)
+            {
+                throw new InvalidOperationException(
+                    "The teacher was created but could not be retrieved.");
+            }
+
+            return createdTeacher;
         }
         public async Task<bool> UpdateAsync(int teacherId, UpdateTeacherDto dto)
         {
@@ -123,11 +131,5 @@ namespace UNIOOP.App.Services
 
             return true;
         }
-
-        // public async Task<bool> HasDependenciesAsync(int studentId)
-        // {
-
-        // }
-
     }
 }
