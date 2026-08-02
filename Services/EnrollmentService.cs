@@ -9,7 +9,6 @@ namespace UNIOOP.App.Services
     public class EnrollmentService : IEnrollmentService
     {
         private readonly DataContextEF _entityFramework;
-
         public EnrollmentService(DataContextEF context)
         {
             _entityFramework = context;
@@ -17,77 +16,30 @@ namespace UNIOOP.App.Services
 
         public async Task<EnrollmentResponseDto?> GetSingleAsync(int studentId, int courseId)
         {
-            return await (
-                from enrollment in _entityFramework.StudentCourses.AsNoTracking()
-
-                join student in _entityFramework.Students.AsNoTracking()
-                    on enrollment.StudentPersonnelID
-                    equals student.PersonnelID
-
-                join course in _entityFramework.Courses.AsNoTracking()
-                    on enrollment.CourseID
-                    equals course.CourseID
-
-                join university in _entityFramework.Universities.AsNoTracking()
-                    on course.UniversityID
-                    equals university.UniversityID
-
-                where student.StudentID == studentId && course.CourseID == courseId
-
-                select new EnrollmentResponseDto
-                {
-                    StudentID = student.StudentID,
-                    StudentName = student.FName + " " + student.LName,
-
-                    CourseID = course.CourseID,
-                    CourseName = course.CourseName,
-
-                    UniversityID = university.UniversityID,
-                    UniversityName = university.UniversityName
-                }
-
-            ).SingleOrDefaultAsync();
+            return await GetEnrollmentResponseQuery()
+                .Where(enrollment => enrollment.StudentID == studentId && enrollment.CourseID == courseId)
+                .SingleOrDefaultAsync();
         }
 
         public async Task<List<EnrollmentResponseDto>> GetStudentCoursesAsync(int studentId)
         {
-            return await (
-                from enrollment in _entityFramework.StudentCourses.AsNoTracking()
-
-                join student in _entityFramework.Students.AsNoTracking()
-                    on enrollment.StudentPersonnelID
-                    equals student.PersonnelID
-
-                join course in _entityFramework.Courses.AsNoTracking()
-                    on enrollment.CourseID
-                    equals course.CourseID
-
-                join university in _entityFramework.Universities.AsNoTracking()
-                    on course.UniversityID
-                    equals university.UniversityID
-
-                where student.StudentID == studentId
-
-                orderby course.CourseName
-
-                select new EnrollmentResponseDto
-                {
-                    StudentID = student.StudentID,
-                    StudentName = student.FName + " " + student.LName,
-
-                    CourseID = course.CourseID,
-                    CourseName = course.CourseName,
-
-                    UniversityID = university.UniversityID,
-                    UniversityName = university.UniversityName
-                }
-
-            ).ToListAsync();
+            return await GetEnrollmentResponseQuery()
+               .Where(enrollment => enrollment.StudentID == studentId)
+               .OrderBy(enrollment => enrollment.CourseName)
+               .ToListAsync();
         }
 
         public async Task<List<EnrollmentResponseDto>> GetCourseStudentsAsync(int courseId)
         {
-            return await (
+            return await GetEnrollmentResponseQuery()
+               .Where(enrollment => enrollment.CourseID == courseId)
+               .OrderBy(enrollment => enrollment.StudentID)
+               .ToListAsync();
+        }
+
+        private IQueryable<EnrollmentResponseDto> GetEnrollmentResponseQuery()
+        {
+            IQueryable<EnrollmentResponseDto> query =
                 from enrollment in _entityFramework.StudentCourses.AsNoTracking()
 
                 join student in _entityFramework.Students.AsNoTracking()
@@ -102,10 +54,6 @@ namespace UNIOOP.App.Services
                     on course.UniversityID
                     equals university.UniversityID
 
-                where course.CourseID == courseId
-
-                orderby student.StudentID
-
                 select new EnrollmentResponseDto
                 {
                     StudentID = student.StudentID,
@@ -116,9 +64,8 @@ namespace UNIOOP.App.Services
 
                     UniversityID = university.UniversityID,
                     UniversityName = university.UniversityName
-                }
-
-            ).ToListAsync();
+                };
+            return query;
         }
 
         public async Task<EnrollmentResponseDto> EnrollAsync(CreateEnrollmentDto dto)
