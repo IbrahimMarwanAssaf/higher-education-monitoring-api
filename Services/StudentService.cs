@@ -3,6 +3,7 @@ using UNIOOP.App.Data;
 using UNIOOP.App.Dtos.Students;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
+using UNIOOP.App.Helpers;
 
 namespace UNIOOP.App.Services
 {
@@ -52,15 +53,16 @@ namespace UNIOOP.App.Services
         {
             var student = new Student
             {
-                SSN = dto.SSN,
-                FName = dto.FName,
-                LName = dto.LName,
+                SSN = InputNormalizationHelper.NormalizeSsn(dto.SSN),
+                FName = InputNormalizationHelper.NormalizeText(dto.FName),
+                LName = InputNormalizationHelper.NormalizeText(dto.LName),
                 DateOfBirth = dto.DateOfBirth,
-                Email = dto.Email,
-                Major = dto.Major,
+                Email = InputNormalizationHelper.NormalizeEmail(dto.Email),
+                Major = InputNormalizationHelper.NormalizeText(dto.Major),
                 GPA = dto.GPA,
                 UniversityID = dto.UniversityID
             };
+
             _entityFramework.Students.Add(student);
 
             await _entityFramework.SaveChangesAsync();
@@ -85,11 +87,11 @@ namespace UNIOOP.App.Services
                 return false;
             }
 
-            existingStudent.FName = dto.FName;
-            existingStudent.LName = dto.LName;
+            existingStudent.FName = InputNormalizationHelper.NormalizeText(dto.FName);
+            existingStudent.LName = InputNormalizationHelper.NormalizeText(dto.LName);
+            existingStudent.Email = InputNormalizationHelper.NormalizeEmail(dto.Email);
+            existingStudent.Major = InputNormalizationHelper.NormalizeText(dto.Major);
             existingStudent.DateOfBirth = dto.DateOfBirth;
-            existingStudent.Email = dto.Email;
-            existingStudent.Major = dto.Major;
             existingStudent.GPA = dto.GPA;
             existingStudent.UniversityID = dto.UniversityID;
 

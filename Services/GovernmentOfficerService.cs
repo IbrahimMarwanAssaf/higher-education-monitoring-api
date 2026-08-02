@@ -3,6 +3,7 @@ using UNIOOP.App.Data;
 using UNIOOP.App.Dtos.GovernmentOfficers;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
+using UNIOOP.App.Helpers;
 
 namespace UNIOOP.App.Services
 {
@@ -49,12 +50,13 @@ namespace UNIOOP.App.Services
         {
             var governmentOfficer = new GovernmentOfficer
             {
-                SSN = dto.SSN,
-                FName = dto.FName,
-                LName = dto.LName,
+                SSN = InputNormalizationHelper.NormalizeSsn(dto.SSN),
+                FName = InputNormalizationHelper.NormalizeText(dto.FName),
+                LName = InputNormalizationHelper.NormalizeText(dto.LName),
                 DateOfBirth = dto.DateOfBirth,
-                Email = dto.Email,
+                Email = InputNormalizationHelper.NormalizeEmail(dto.Email)
             };
+
             _entityFramework.GovernmentOfficers.Add(governmentOfficer);
 
             await _entityFramework.SaveChangesAsync();
@@ -79,10 +81,11 @@ namespace UNIOOP.App.Services
                 return false;
             }
 
-            existingGovernmentOfficer.FName = dto.FName;
-            existingGovernmentOfficer.LName = dto.LName;
+            existingGovernmentOfficer.FName = InputNormalizationHelper.NormalizeText(dto.FName);
+            existingGovernmentOfficer.LName = InputNormalizationHelper.NormalizeText(dto.LName);
+            existingGovernmentOfficer.Email = InputNormalizationHelper.NormalizeEmail(dto.Email);
             existingGovernmentOfficer.DateOfBirth = dto.DateOfBirth;
-            existingGovernmentOfficer.Email = dto.Email;
+
 
             await _entityFramework.SaveChangesAsync();
 

@@ -3,6 +3,7 @@ using UNIOOP.App.Data;
 using UNIOOP.App.Dtos.Teachers;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
+using UNIOOP.App.Helpers;
 
 namespace UNIOOP.App.Services
 {
@@ -54,15 +55,15 @@ namespace UNIOOP.App.Services
         {
             var teacher = new Teacher
             {
-                SSN = dto.SSN,
-                FName = dto.FName,
-                LName = dto.LName,
+                SSN = InputNormalizationHelper.NormalizeSsn(dto.SSN),
+                FName = InputNormalizationHelper.NormalizeText(dto.FName),
+                LName = InputNormalizationHelper.NormalizeText(dto.LName),
                 DateOfBirth = dto.DateOfBirth,
-                Email = dto.Email,
-                Department = dto.Department,
+                Email = InputNormalizationHelper.NormalizeEmail(dto.Email),
+                Department = InputNormalizationHelper.NormalizeText(dto.Department),
                 Salary = dto.Salary,
-                MinistryDegreeID = dto.MinistryDegreeID,
-                UniversityID = dto.UniversityID
+                UniversityID = dto.UniversityID,
+                MinistryDegreeID = dto.MinistryDegreeID
             };
             _entityFramework.Teachers.Add(teacher);
 
@@ -88,14 +89,14 @@ namespace UNIOOP.App.Services
                 return false;
             }
 
-            existingTeacher.FName = dto.FName;
-            existingTeacher.LName = dto.LName;
+            existingTeacher.FName = InputNormalizationHelper.NormalizeText(dto.FName);
+            existingTeacher.LName = InputNormalizationHelper.NormalizeText(dto.LName);
+            existingTeacher.Email = InputNormalizationHelper.NormalizeEmail(dto.Email);
+            existingTeacher.Department = InputNormalizationHelper.NormalizeText(dto.Department);
             existingTeacher.DateOfBirth = dto.DateOfBirth;
-            existingTeacher.Email = dto.Email;
-            existingTeacher.Department = dto.Department;
             existingTeacher.Salary = dto.Salary;
-            existingTeacher.MinistryDegreeID = dto.MinistryDegreeID;
             existingTeacher.UniversityID = dto.UniversityID;
+            existingTeacher.MinistryDegreeID = dto.MinistryDegreeID;
 
             await _entityFramework.SaveChangesAsync();
 

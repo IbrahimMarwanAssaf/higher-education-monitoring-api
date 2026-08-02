@@ -3,6 +3,7 @@ using UNIOOP.App.Data;
 using UNIOOP.App.Dtos.Courses;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
+using UNIOOP.App.Helpers;
 
 namespace UNIOOP.App.Services
 {
@@ -66,7 +67,7 @@ namespace UNIOOP.App.Services
 
             var course = new Course
             {
-                CourseName = dto.CourseName,
+                CourseName = InputNormalizationHelper.NormalizeText(dto.CourseName),
                 Credits = dto.Credits,
                 UniversityID = dto.UniversityID,
                 TeacherPersonnelID = teacherPersonnelId,

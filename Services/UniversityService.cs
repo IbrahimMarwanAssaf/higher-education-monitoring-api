@@ -3,6 +3,8 @@ using UNIOOP.App.Services.Interfaces;
 using UNIOOP.App.Dtos.Universities;
 using Microsoft.EntityFrameworkCore;
 using UNIOOP.App.Models;
+using UNIOOP.App.Helpers;
+
 namespace UNIOOP.App.Services
 {
 
@@ -41,7 +43,7 @@ namespace UNIOOP.App.Services
         {
             var university = new University
             {
-                UniversityName = dto.UniversityName
+                UniversityName = InputNormalizationHelper.NormalizeText(dto.UniversityName)
             };
 
             _entityFramework.Universities.Add(university);
@@ -60,7 +62,7 @@ namespace UNIOOP.App.Services
                 return false;
             }
 
-            university.UniversityName = dto.UniversityName;
+            university.UniversityName = InputNormalizationHelper.NormalizeText(dto.UniversityName);
 
             await _entityFramework.SaveChangesAsync();
 
