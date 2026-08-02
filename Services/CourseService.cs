@@ -3,6 +3,7 @@ using UNIOOP.App.Data;
 using UNIOOP.App.Dtos.Courses;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
+using UNIOOP.App.Helpers;
 
 namespace UNIOOP.App.Services
 {
@@ -17,51 +18,40 @@ namespace UNIOOP.App.Services
 
         public async Task<List<CourseResponseDto>> GetAllAsync()
         {
-            return await (
-                from course in _entityFramework.Courses.AsNoTracking()
-                join university in _entityFramework.Universities.AsNoTracking()
-                    on course.UniversityID equals university.UniversityID
-                join teacher in _entityFramework.Teachers.AsNoTracking()
-                    on course.TeacherPersonnelID equals teacher.PersonnelID
-                        into teacherGroup
-                from teacher in teacherGroup.DefaultIfEmpty()
-                orderby course.CourseID
-                select new CourseResponseDto
-                {
-                    CourseID = course.CourseID,
-                    CourseName = course.CourseName,
-                    Credits = course.Credits,
-
-                    UniversityID = course.UniversityID,
-                    UniversityName = university.UniversityName,
-
-                    TeacherID = teacher == null ? null : teacher.TeacherID,
-                    TeacherName = teacher == null ? null : teacher.FName + " " + teacher.LName
-                }).ToListAsync();
+            return await GetCourseResponseQuery()
+                .OrderBy(course => course.CourseID)
+                .ToListAsync();
         }
         public async Task<CourseResponseDto?> GetSingleAsync(int courseId)
         {
-            return await (
-                from course in _entityFramework.Courses.AsNoTracking()
-                join university in _entityFramework.Universities.AsNoTracking()
-                    on course.UniversityID equals university.UniversityID
-                join teacher in _entityFramework.Teachers.AsNoTracking()
-                    on course.TeacherPersonnelID equals teacher.PersonnelID
-                        into teacherGroup
-                from teacher in teacherGroup.DefaultIfEmpty()
-                where course.CourseID == courseId
-                select new CourseResponseDto
-                {
-                    CourseID = course.CourseID,
-                    CourseName = course.CourseName,
-                    Credits = course.Credits,
+            return await GetCourseResponseQuery()
+                .Where(course => course.CourseID == courseId)
+                .SingleOrDefaultAsync();
+        }
 
-                    UniversityID = course.UniversityID,
-                    UniversityName = university.UniversityName,
+        private IQueryable<CourseResponseDto> GetCourseResponseQuery()
+        {
+            IQueryable<CourseResponseDto> query =
+            from course in _entityFramework.Courses.AsNoTracking()
+            join university in _entityFramework.Universities.AsNoTracking()
+                on course.UniversityID equals university.UniversityID
+            join teacher in _entityFramework.Teachers.AsNoTracking()
+                on course.TeacherPersonnelID equals teacher.PersonnelID
+                    into teacherGroup
+            from teacher in teacherGroup.DefaultIfEmpty()
+            select new CourseResponseDto
+            {
+                CourseID = course.CourseID,
+                CourseName = course.CourseName,
+                Credits = course.Credits,
 
-                    TeacherID = teacher == null ? null : teacher.TeacherID,
-                    TeacherName = teacher == null ? null : teacher.FName + " " + teacher.LName
-                }).SingleOrDefaultAsync();
+                UniversityID = course.UniversityID,
+                UniversityName = university.UniversityName,
+
+                TeacherID = teacher == null ? null : teacher.TeacherID,
+                TeacherName = teacher == null ? null : teacher.FName + " " + teacher.LName
+            };
+            return query;
         }
         public async Task<CourseResponseDto> CreateAsync(CreateCourseDto dto)
         {
@@ -77,7 +67,7 @@ namespace UNIOOP.App.Services
 
             var course = new Course
             {
-                CourseName = dto.CourseName,
+                CourseName = InputNormalizationHelper.NormalizeText(dto.CourseName),
                 Credits = dto.Credits,
                 UniversityID = dto.UniversityID,
                 TeacherPersonnelID = teacherPersonnelId,
@@ -142,11 +132,5 @@ namespace UNIOOP.App.Services
 
             return true;
         }
-
-        // public async Task<bool> HasDependenciesAsync(int courseId)
-        // {
-
-        // }
-
     }
 }

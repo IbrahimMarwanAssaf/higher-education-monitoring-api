@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using UNIOOP.App.Data;
+using UNIOOP.App.Helpers;
 
 namespace UNIOOP.App.Helpers
 {
@@ -39,14 +40,16 @@ namespace UNIOOP.App.Helpers
 
         public async Task<bool> UniversityNameExistsAsync(string universityName, int? excludeUniversityId = null)
         {
-            string normalizedName = universityName.Trim().ToLower();
+            string normalizedName = InputNormalizationHelper
+                .NormalizeText(universityName)
+                .ToLowerInvariant();
             return await _entityFramework.Universities.AnyAsync(u => u.UniversityName.ToLower() == normalizedName &&
                 (!excludeUniversityId.HasValue || u.UniversityID != excludeUniversityId.Value));
         }
 
         public async Task<bool> SSNExistsAsync(string ssn)
         {
-            string normalizedSsn = ssn.Trim();
+            string normalizedSsn = InputNormalizationHelper.NormalizeText(ssn);
             return await _entityFramework.Personnels.AnyAsync(p => p.SSN == normalizedSsn);
         }
 
@@ -97,14 +100,16 @@ namespace UNIOOP.App.Helpers
 
         private async Task<bool> EmailExistsAsync(string email, long? excludePersonnelId)
         {
-            string normalizedEmail = email.Trim().ToLower();
+            string normalizedEmail = InputNormalizationHelper.NormalizeEmail(email);
             return await _entityFramework.Personnels.AnyAsync(p => p.Email.ToLower() == normalizedEmail &&
                 (!excludePersonnelId.HasValue || p.PersonnelID != excludePersonnelId.Value));
         }
 
         public async Task<bool> CourseNameExistsAsync(string courseName, int universityId, int? excludeCourseId = null)
         {
-            string normalizedName = courseName.Trim().ToLower();
+            string normalizedName = InputNormalizationHelper
+                .NormalizeText(courseName)
+                .ToLowerInvariant();
             return await _entityFramework.Courses.AnyAsync(c => c.CourseName.ToLower() == normalizedName &&
                 c.UniversityID == universityId && (!excludeCourseId.HasValue || c.CourseID != excludeCourseId.Value));
         }

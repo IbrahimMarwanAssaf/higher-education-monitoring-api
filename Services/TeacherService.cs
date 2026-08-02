@@ -3,6 +3,7 @@ using UNIOOP.App.Data;
 using UNIOOP.App.Dtos.Teachers;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
+using UNIOOP.App.Helpers;
 
 namespace UNIOOP.App.Services
 {
@@ -17,11 +18,23 @@ namespace UNIOOP.App.Services
 
         public async Task<List<TeacherResponseDto>> GetAllAsync()
         {
-            return await (
+            return await GetTeacherResponseQuery()
+                .OrderBy(teacher => teacher.TeacherID)
+                .ToListAsync();
+        }
+        public async Task<TeacherResponseDto?> GetSingleAsync(int teacherId)
+        {
+            return await GetTeacherResponseQuery()
+                .Where(teacher => teacher.TeacherID == teacherId)
+                .SingleOrDefaultAsync();
+        }
+
+        private IQueryable<TeacherResponseDto> GetTeacherResponseQuery()
+        {
+            IQueryable<TeacherResponseDto> query =
                 from teacher in _entityFramework.Teachers.AsNoTracking()
                 join university in _entityFramework.Universities.AsNoTracking()
                     on teacher.UniversityID equals university.UniversityID
-                orderby teacher.TeacherID
                 select new TeacherResponseDto
                 {
                     TeacherID = teacher.TeacherID,
@@ -35,47 +48,22 @@ namespace UNIOOP.App.Services
                     MinistryDegreeID = teacher.MinistryDegreeID,
                     UniversityID = teacher.UniversityID,
                     UniversityName = university.UniversityName
-                }).ToListAsync();
-        }
-        public async Task<TeacherResponseDto?> GetSingleAsync(int teacherId)
-        {
-            return await (
-             from teacher in _entityFramework.Teachers.AsNoTracking()
-
-             join university in
-                 _entityFramework.Universities.AsNoTracking()
-                 on teacher.UniversityID equals university.UniversityID
-
-             where teacher.TeacherID == teacherId
-
-             select new TeacherResponseDto
-             {
-                 TeacherID = teacher.TeacherID,
-                 FName = teacher.FName,
-                 LName = teacher.LName,
-                 DateOfBirth = teacher.DateOfBirth,
-                 Email = teacher.Email,
-                 Department = teacher.Department,
-                 Salary = teacher.Salary,
-
-                 MinistryDegreeID = teacher.MinistryDegreeID,
-                 UniversityID = teacher.UniversityID,
-                 UniversityName = university.UniversityName
-             }).SingleOrDefaultAsync();
+                };
+            return query;
         }
         public async Task<TeacherResponseDto> CreateAsync(CreateTeacherDto dto)
         {
             var teacher = new Teacher
             {
-                SSN = dto.SSN,
-                FName = dto.FName,
-                LName = dto.LName,
+                SSN = InputNormalizationHelper.NormalizeSsn(dto.SSN),
+                FName = InputNormalizationHelper.NormalizeText(dto.FName),
+                LName = InputNormalizationHelper.NormalizeText(dto.LName),
                 DateOfBirth = dto.DateOfBirth,
-                Email = dto.Email,
-                Department = dto.Department,
+                Email = InputNormalizationHelper.NormalizeEmail(dto.Email),
+                Department = InputNormalizationHelper.NormalizeText(dto.Department),
                 Salary = dto.Salary,
-                MinistryDegreeID = dto.MinistryDegreeID,
-                UniversityID = dto.UniversityID
+                UniversityID = dto.UniversityID,
+                MinistryDegreeID = dto.MinistryDegreeID
             };
             _entityFramework.Teachers.Add(teacher);
 
@@ -101,14 +89,14 @@ namespace UNIOOP.App.Services
                 return false;
             }
 
-            existingTeacher.FName = dto.FName;
-            existingTeacher.LName = dto.LName;
+            existingTeacher.FName = InputNormalizationHelper.NormalizeText(dto.FName);
+            existingTeacher.LName = InputNormalizationHelper.NormalizeText(dto.LName);
+            existingTeacher.Email = InputNormalizationHelper.NormalizeEmail(dto.Email);
+            existingTeacher.Department = InputNormalizationHelper.NormalizeText(dto.Department);
             existingTeacher.DateOfBirth = dto.DateOfBirth;
-            existingTeacher.Email = dto.Email;
-            existingTeacher.Department = dto.Department;
             existingTeacher.Salary = dto.Salary;
-            existingTeacher.MinistryDegreeID = dto.MinistryDegreeID;
             existingTeacher.UniversityID = dto.UniversityID;
+            existingTeacher.MinistryDegreeID = dto.MinistryDegreeID;
 
             await _entityFramework.SaveChangesAsync();
 

@@ -3,6 +3,7 @@ using UNIOOP.App.Data;
 using UNIOOP.App.Dtos.GovernmentOfficers;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
+using UNIOOP.App.Helpers;
 
 namespace UNIOOP.App.Services
 {
@@ -17,44 +18,45 @@ namespace UNIOOP.App.Services
 
         public async Task<List<GovernmentOfficerResponseDto>> GetAllAsync()
         {
-            return await (
-                from governmentOfficer in _entityFramework.GovernmentOfficers.AsNoTracking()
-                orderby governmentOfficer.OfficerID
-                select new GovernmentOfficerResponseDto
-                {
-                    OfficerID = governmentOfficer.OfficerID,
-                    SSN = governmentOfficer.SSN,
-                    FName = governmentOfficer.FName,
-                    LName = governmentOfficer.LName,
-                    DateOfBirth = governmentOfficer.DateOfBirth,
-                    Email = governmentOfficer.Email
-                }).ToListAsync();
+            return await GetGovernmentOfficerResponseQuery()
+                .OrderBy(g => g.OfficerID)
+                .ToListAsync();
         }
+
         public async Task<GovernmentOfficerResponseDto?> GetSingleAsync(int governmentOfficerId)
         {
-            return await (
-             from governmentOfficer in _entityFramework.GovernmentOfficers.AsNoTracking()
-             where governmentOfficer.OfficerID == governmentOfficerId
-             select new GovernmentOfficerResponseDto
-             {
-                 OfficerID = governmentOfficer.OfficerID,
-                 SSN = governmentOfficer.SSN,
-                 FName = governmentOfficer.FName,
-                 LName = governmentOfficer.LName,
-                 DateOfBirth = governmentOfficer.DateOfBirth,
-                 Email = governmentOfficer.Email
-             }).SingleOrDefaultAsync();
+            return await GetGovernmentOfficerResponseQuery()
+                .Where(g => g.OfficerID == governmentOfficerId)
+                .SingleOrDefaultAsync();
         }
+
+        private IQueryable<GovernmentOfficerResponseDto> GetGovernmentOfficerResponseQuery()
+        {
+            IQueryable<GovernmentOfficerResponseDto> query =
+            from governmentOfficer in _entityFramework.GovernmentOfficers.AsNoTracking()
+            select new GovernmentOfficerResponseDto
+            {
+                OfficerID = governmentOfficer.OfficerID,
+                SSN = governmentOfficer.SSN,
+                FName = governmentOfficer.FName,
+                LName = governmentOfficer.LName,
+                DateOfBirth = governmentOfficer.DateOfBirth,
+                Email = governmentOfficer.Email
+            };
+            return query;
+        }
+
         public async Task<GovernmentOfficerResponseDto> CreateAsync(CreateGovernmentOfficerDto dto)
         {
             var governmentOfficer = new GovernmentOfficer
             {
-                SSN = dto.SSN,
-                FName = dto.FName,
-                LName = dto.LName,
+                SSN = InputNormalizationHelper.NormalizeSsn(dto.SSN),
+                FName = InputNormalizationHelper.NormalizeText(dto.FName),
+                LName = InputNormalizationHelper.NormalizeText(dto.LName),
                 DateOfBirth = dto.DateOfBirth,
-                Email = dto.Email,
+                Email = InputNormalizationHelper.NormalizeEmail(dto.Email)
             };
+
             _entityFramework.GovernmentOfficers.Add(governmentOfficer);
 
             await _entityFramework.SaveChangesAsync();
@@ -79,10 +81,11 @@ namespace UNIOOP.App.Services
                 return false;
             }
 
-            existingGovernmentOfficer.FName = dto.FName;
-            existingGovernmentOfficer.LName = dto.LName;
+            existingGovernmentOfficer.FName = InputNormalizationHelper.NormalizeText(dto.FName);
+            existingGovernmentOfficer.LName = InputNormalizationHelper.NormalizeText(dto.LName);
+            existingGovernmentOfficer.Email = InputNormalizationHelper.NormalizeEmail(dto.Email);
             existingGovernmentOfficer.DateOfBirth = dto.DateOfBirth;
-            existingGovernmentOfficer.Email = dto.Email;
+
 
             await _entityFramework.SaveChangesAsync();
 
