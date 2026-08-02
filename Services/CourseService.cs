@@ -142,11 +142,5 @@ namespace UNIOOP.App.Services
 
             return true;
         }
-
-        // public async Task<bool> HasDependenciesAsync(int courseId)
-        // {
-
-        // }
-
     }
 }
