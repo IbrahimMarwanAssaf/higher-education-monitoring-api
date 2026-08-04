@@ -66,7 +66,7 @@ namespace UNIOOP.App.Controllers
             return Ok(enrollments);
         }
 
-        [HttpPost]
+        [HttpPost("Enroll")]
         public async Task<ActionResult<EnrollmentResponseDto>> Enroll(CreateEnrollmentDto dto)
         {
             if (!await _validationHelper.StudentExistsAsync(dto.StudentID))

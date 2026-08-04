@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.Universities;
 using UNIOOP.App.Helpers;
-using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
 
 namespace UNIOOP.APP.Controllers;
@@ -12,6 +11,7 @@ public class UniversityController : ControllerBase
 {
     private readonly IUniversityService _universityService;
     private readonly IDatabaseValidationHelper _validationHelper;
+
     public UniversityController(IUniversityService universityService, IDatabaseValidationHelper validationHelper)
     {
         _universityService = universityService;
@@ -19,17 +19,16 @@ public class UniversityController : ControllerBase
     }
 
     [HttpGet("GetAll")]
-    public async Task<ActionResult<List<University>>> GetAll()
+    public async Task<ActionResult<List<UniversityResponseDto>>> GetAll()
     {
-        List<University> universities = await _universityService.GetAllAsync();
-
+        List<UniversityResponseDto> universities = await _universityService.GetAllAsync();
         return Ok(universities);
     }
 
     [HttpGet("GetSingle/{universityId}")]
-    public async Task<ActionResult<University>> GetSingle(int universityId)
+    public async Task<ActionResult<UniversityResponseDto>> GetSingle(int universityId)
     {
-        University? university = await _universityService.GetSingleAsync(universityId);
+        UniversityResponseDto? university = await _universityService.GetSingleAsync(universityId);
 
         if (university is null)
         {
@@ -43,9 +42,8 @@ public class UniversityController : ControllerBase
     }
 
     [HttpPost("Create")]
-    public async Task<ActionResult<University>> Create(UniversityDto dto)
+    public async Task<ActionResult<UniversityResponseDto>> Create(UniversityCreateUpdateDto dto)
     {
-
         if (await _validationHelper.UniversityNameExistsAsync(dto.UniversityName))
         {
             return Conflict(new
@@ -54,17 +52,14 @@ public class UniversityController : ControllerBase
             });
         }
 
-        University university = await _universityService.CreateAsync(dto);
+        UniversityResponseDto university = await _universityService.CreateAsync(dto);
 
-        return CreatedAtAction(nameof(GetSingle), new { universityId = university.UniversityID }, university); // [201 + location + body]
-                                                                                                               //OR
-                                                                                                               //return Ok(university); //[200 + body]
+        return CreatedAtAction(nameof(GetSingle), new { universityId = university.UniversityID }, university);
     }
 
     [HttpPut("Update/{universityId}")]
-    public async Task<ActionResult> Update(int universityId, UniversityDto dto)
+    public async Task<ActionResult> Update(int universityId, UniversityCreateUpdateDto dto)
     {
-
         if (!await _validationHelper.UniversityExistsAsync(universityId))
         {
             return NotFound();
