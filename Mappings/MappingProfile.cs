@@ -48,6 +48,10 @@ namespace UNIOOP.App.Mappings
                     opt => opt.MapFrom(src => src.University.UniversityName)
                 )
                 .ForMember(
+                    dest => dest.TeacherID,
+                    opt => opt.MapFrom(src => src.Teacher == null ? null : (int?)src.Teacher.TeacherID)
+                )
+                .ForMember(
                     dest => dest.TeacherName,
                     opt => opt.MapFrom(src =>
                         src.Teacher == null

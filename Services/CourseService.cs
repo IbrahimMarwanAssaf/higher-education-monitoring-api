@@ -1,66 +1,48 @@
-using Microsoft.EntityFrameworkCore;
-using UNIOOP.App.Data;
 using UNIOOP.App.Dtos.Courses;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
 using UNIOOP.App.Helpers;
+using UNIOOP.App.Repositories.Interfaces;
+using AutoMapper;
 
 namespace UNIOOP.App.Services
 {
     public class CourseService : ICourseService
     {
-        private readonly DataContextEF _entityFramework;
-
-        public CourseService(DataContextEF context)
+        private readonly ICourseRepository _courseRepository;
+        private readonly ITeacherRepository _teacherRepository;
+        private readonly IMapper _mapper;
+        public CourseService(ICourseRepository courseRepository, IMapper mapper, ITeacherRepository teacherRepository)
         {
-            _entityFramework = context;
+            _courseRepository = courseRepository;
+            _teacherRepository = teacherRepository;
+            _mapper = mapper;
         }
 
         public async Task<List<CourseResponseDto>> GetAllAsync()
         {
-            return await GetCourseResponseQuery()
-                .OrderBy(course => course.CourseID)
-                .ToListAsync();
+            var courses = await _courseRepository.GetAllAsync();
+            return _mapper.Map<List<CourseResponseDto>>(courses);
         }
         public async Task<CourseResponseDto?> GetSingleAsync(int courseId)
         {
-            return await GetCourseResponseQuery()
-                .Where(course => course.CourseID == courseId)
-                .SingleOrDefaultAsync();
+            var course = await _courseRepository.GetByIdAsync(courseId);
+            return course == null ? null : _mapper.Map<CourseResponseDto>(course);
         }
 
-        private IQueryable<CourseResponseDto> GetCourseResponseQuery()
-        {
-            IQueryable<CourseResponseDto> query =
-            from course in _entityFramework.Courses.AsNoTracking()
-            join university in _entityFramework.Universities.AsNoTracking()
-                on course.UniversityID equals university.UniversityID
-            join teacher in _entityFramework.Teachers.AsNoTracking()
-                on course.TeacherPersonnelID equals teacher.PersonnelID
-                    into teacherGroup
-            from teacher in teacherGroup.DefaultIfEmpty()
-            select new CourseResponseDto
-            {
-                CourseID = course.CourseID,
-                CourseName = course.CourseName,
-                Credits = course.Credits,
-
-                UniversityID = course.UniversityID,
-                UniversityName = university.UniversityName,
-
-                TeacherID = teacher == null ? null : teacher.TeacherID,
-                TeacherName = teacher == null ? null : teacher.FName + " " + teacher.LName
-            };
-            return query;
-        }
         public async Task<CourseResponseDto> CreateAsync(CreateCourseDto dto)
         {
             long? teacherPersonnelId = null;
 
             if (dto.TeacherID.HasValue)
             {
-                Teacher teacher = await _entityFramework.Teachers.AsNoTracking()
-                    .SingleAsync(t => t.TeacherID == dto.TeacherID.Value);
+                Teacher? teacher = await _teacherRepository.GetByIdAsync(dto.TeacherID.Value);
+
+                if (teacher == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Teacher with ID {dto.TeacherID.Value} was not found.");
+                }
 
                 teacherPersonnelId = teacher.PersonnelID;
             }
@@ -72,9 +54,10 @@ namespace UNIOOP.App.Services
                 UniversityID = dto.UniversityID,
                 TeacherPersonnelID = teacherPersonnelId,
             };
-            _entityFramework.Courses.Add(course);
 
-            await _entityFramework.SaveChangesAsync();
+            await _courseRepository.AddAsync(course);
+
+            await _courseRepository.SaveChangesAsync();
 
             CourseResponseDto? createdCourse = await GetSingleAsync(course.CourseID);
 
@@ -88,8 +71,7 @@ namespace UNIOOP.App.Services
         }
         public async Task<bool> UpdateAsync(int courseId, UpdateCourseDto dto)
         {
-            Course? existingCourse = await _entityFramework.Courses
-                .SingleOrDefaultAsync(s => s.CourseID == courseId);
+            Course? existingCourse = await _courseRepository.GetByIdForUpdateAsync(courseId);
 
             if (existingCourse is null)
             {
@@ -100,8 +82,13 @@ namespace UNIOOP.App.Services
 
             if (dto.TeacherID.HasValue)
             {
-                Teacher teacher = await _entityFramework.Teachers.AsNoTracking()
-                    .SingleAsync(t => t.TeacherID == dto.TeacherID.Value);
+                Teacher? teacher = await _teacherRepository.GetByIdAsync(dto.TeacherID.Value);
+
+                if (teacher == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Teacher with ID {dto.TeacherID.Value} was not found.");
+                }
 
                 teacherPersonnelId = teacher.PersonnelID;
             }
@@ -111,24 +98,23 @@ namespace UNIOOP.App.Services
             existingCourse.UniversityID = dto.UniversityID;
             existingCourse.TeacherPersonnelID = teacherPersonnelId;
 
-            await _entityFramework.SaveChangesAsync();
+            await _courseRepository.SaveChangesAsync();
 
             return true;
         }
 
         public async Task<bool> DeleteAsync(int courseId)
         {
-            Course? existingCourse = await _entityFramework.Courses
-                .SingleOrDefaultAsync(s => s.CourseID == courseId);
+            Course? existingCourse = await _courseRepository.GetByIdForUpdateAsync(courseId);
 
             if (existingCourse is null)
             {
                 return false;
             }
 
-            _entityFramework.Courses.Remove(existingCourse);
+            _courseRepository.Remove(existingCourse);
 
-            await _entityFramework.SaveChangesAsync();
+            await _courseRepository.SaveChangesAsync();
 
             return true;
         }
