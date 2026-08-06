@@ -26,8 +26,8 @@ namespace UNIOOP.APP.Data.Configurations
 
             builder.Property(t => t.UniversityID).IsRequired();
 
-            builder.HasOne<University>()
-                .WithMany()
+            builder.HasOne(t => t.University)
+                .WithMany(u => u.teachersCollection)
                 .HasForeignKey(t => t.UniversityID)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_Teacher_University");

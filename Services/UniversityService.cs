@@ -1,61 +1,66 @@
-using UNIOOP.App.Data;
 using UNIOOP.App.Services.Interfaces;
 using UNIOOP.App.Dtos.Universities;
-using Microsoft.EntityFrameworkCore;
 using UNIOOP.App.Models;
 using UNIOOP.App.Helpers;
+using UNIOOP.App.Repositories.Interfaces;
 
 namespace UNIOOP.App.Services
 {
-
     public class UniversityService : IUniversityService
     {
-        private readonly DataContextEF _entityFramework;
+        private readonly IUniversityRepository _universityRepository;
 
-        public UniversityService(DataContextEF context)
+        public UniversityService(IUniversityRepository universityRepository)
         {
-            _entityFramework = context;
+            _universityRepository = universityRepository;
         }
 
-        public async Task<List<University>> GetAllAsync()
+        public async Task<List<UniversityResponseDto>> GetAllAsync()
         {
-            return await _entityFramework.Universities.AsNoTracking().OrderBy(u => u.UniversityID)
-            .Select(u => new University
+            var universities = await _universityRepository.GetAllAsync();
+
+            return universities.Select(u => new UniversityResponseDto
             {
                 UniversityID = u.UniversityID,
                 UniversityName = u.UniversityName
-            }).ToListAsync();
+            }).ToList();
         }
 
-        public async Task<University?> GetSingleAsync(int universityId)
+        public async Task<UniversityResponseDto?> GetSingleAsync(int universityId)
         {
-            return await _entityFramework.Universities.AsNoTracking()
-                .Where(u => u.UniversityID == universityId)
-                .Select(u => new University
-                {
-                    UniversityID = u.UniversityID,
-                    UniversityName = u.UniversityName
-                })
-                .SingleOrDefaultAsync();
+            var university = await _universityRepository.GetByIdAsync(universityId);
+            if (university == null)
+            {
+                return null;
+            }
+
+            return new UniversityResponseDto
+            {
+                UniversityID = university.UniversityID,
+                UniversityName = university.UniversityName
+            };
         }
 
-        public async Task<University> CreateAsync(UniversityDto dto)
+        public async Task<UniversityResponseDto> CreateAsync(UniversityCreateUpdateDto dto)
         {
             var university = new University
             {
                 UniversityName = InputNormalizationHelper.NormalizeText(dto.UniversityName)
             };
 
-            _entityFramework.Universities.Add(university);
+            await _universityRepository.AddAsync(university);
+            await _universityRepository.SaveChangesAsync();
 
-            await _entityFramework.SaveChangesAsync();
-
-            return university;
+            return new UniversityResponseDto
+            {
+                UniversityID = university.UniversityID,
+                UniversityName = university.UniversityName
+            };
         }
 
-        public async Task<bool> UpdateAsync(int universityId, UniversityDto dto)
+        public async Task<bool> UpdateAsync(int universityId, UniversityCreateUpdateDto dto)
         {
-            University? university = await _entityFramework.Universities.SingleOrDefaultAsync(u => u.UniversityID == universityId);
+            University? university = await _universityRepository.GetByIdForUpdateAsync(universityId);
 
             if (university == null)
             {
@@ -63,24 +68,22 @@ namespace UNIOOP.App.Services
             }
 
             university.UniversityName = InputNormalizationHelper.NormalizeText(dto.UniversityName);
-
-            await _entityFramework.SaveChangesAsync();
+            await _universityRepository.SaveChangesAsync();
 
             return true;
         }
 
         public async Task<bool> DeleteAsync(int universityId)
         {
-            University? university = await _entityFramework.Universities.SingleOrDefaultAsync(u => u.UniversityID == universityId);
+            University? university = await _universityRepository.GetByIdForUpdateAsync(universityId);
 
             if (university == null)
             {
                 return false;
             }
 
-            _entityFramework.Universities.Remove(university);
-
-            await _entityFramework.SaveChangesAsync();
+            _universityRepository.Remove(university);
+            await _universityRepository.SaveChangesAsync();
 
             return true;
         }

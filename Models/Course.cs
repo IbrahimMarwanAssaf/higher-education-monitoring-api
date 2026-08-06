@@ -8,6 +8,10 @@ namespace UNIOOP.App.Models
         public int UniversityID { get; set; }
         public long? TeacherPersonnelID { get; set; }
 
+        public University University { get; set; } = null!;
+        public Teacher? Teacher { get; set; } = null!;
+        public ICollection<StudentCourse> enrollmentCollection = [];
+
         public Course() { }
 
         public Course(int courseID, string courseName, short credits, int universityID, long teacherPersonnelID)

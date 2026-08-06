@@ -22,10 +22,9 @@ namespace UNIOOP.APP.Data.Configurations
 
             builder.Property(s => s.GPA).HasPrecision(3, 2).IsRequired();
 
-            builder.HasOne<University>()
-                .WithMany()
+            builder.HasOne(s => s.University)
+                .WithMany(u => u.studentsCollection)
                 .HasForeignKey(s => s.UniversityID)
-                .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_Student_University");
 

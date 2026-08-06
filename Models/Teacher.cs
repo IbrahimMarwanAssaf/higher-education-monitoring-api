@@ -10,6 +10,9 @@ namespace UNIOOP.App.Models
         public int? MinistryDegreeID { get; set; }
         public int UniversityID { get; set; }
 
+        public University University { get; set; } = null!;
+        public ICollection<Course> coursesCollection = [];
+
         public Teacher() { }
 
         public Teacher(

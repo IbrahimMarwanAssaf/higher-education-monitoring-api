@@ -1,49 +1,33 @@
-using Microsoft.EntityFrameworkCore;
-using UNIOOP.App.Data;
 using UNIOOP.App.Dtos.GovernmentOfficers;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
 using UNIOOP.App.Helpers;
+using UNIOOP.App.Repositories.Interfaces;
+using AutoMapper;
 
 namespace UNIOOP.App.Services
 {
     public class GovernmentOfficerService : IGovernmentOfficerService
     {
-        private readonly DataContextEF _entityFramework;
+        private readonly IGovernmentOfficerRepository _governmentOfficerRepository;
+        private readonly IMapper _mapper;
 
-        public GovernmentOfficerService(DataContextEF context)
+        public GovernmentOfficerService(IGovernmentOfficerRepository governmentOfficerRepository, IMapper mapper)
         {
-            _entityFramework = context;
+            _governmentOfficerRepository = governmentOfficerRepository;
+            _mapper = mapper;
         }
 
         public async Task<List<GovernmentOfficerResponseDto>> GetAllAsync()
         {
-            return await GetGovernmentOfficerResponseQuery()
-                .OrderBy(g => g.OfficerID)
-                .ToListAsync();
+            var governmentOfficers = await _governmentOfficerRepository.GetAllAsync();
+            return _mapper.Map<List<GovernmentOfficerResponseDto>>(governmentOfficers);
         }
 
-        public async Task<GovernmentOfficerResponseDto?> GetSingleAsync(int governmentOfficerId)
+        public async Task<GovernmentOfficerResponseDto?> GetSingleAsync(int OfficerID)
         {
-            return await GetGovernmentOfficerResponseQuery()
-                .Where(g => g.OfficerID == governmentOfficerId)
-                .SingleOrDefaultAsync();
-        }
-
-        private IQueryable<GovernmentOfficerResponseDto> GetGovernmentOfficerResponseQuery()
-        {
-            IQueryable<GovernmentOfficerResponseDto> query =
-            from governmentOfficer in _entityFramework.GovernmentOfficers.AsNoTracking()
-            select new GovernmentOfficerResponseDto
-            {
-                OfficerID = governmentOfficer.OfficerID,
-                SSN = governmentOfficer.SSN,
-                FName = governmentOfficer.FName,
-                LName = governmentOfficer.LName,
-                DateOfBirth = governmentOfficer.DateOfBirth,
-                Email = governmentOfficer.Email
-            };
-            return query;
+            var governmentOfficer = await _governmentOfficerRepository.GetByIdAsync(OfficerID);
+            return governmentOfficer == null ? null : _mapper.Map<GovernmentOfficerResponseDto>(governmentOfficer);
         }
 
         public async Task<GovernmentOfficerResponseDto> CreateAsync(CreateGovernmentOfficerDto dto)
@@ -57,9 +41,9 @@ namespace UNIOOP.App.Services
                 Email = InputNormalizationHelper.NormalizeEmail(dto.Email)
             };
 
-            _entityFramework.GovernmentOfficers.Add(governmentOfficer);
+            await _governmentOfficerRepository.AddAsync(governmentOfficer);
 
-            await _entityFramework.SaveChangesAsync();
+            await _governmentOfficerRepository.SaveChangesAsync();
 
             GovernmentOfficerResponseDto? createdOfficer = await GetSingleAsync(governmentOfficer.OfficerID);
 
@@ -73,8 +57,8 @@ namespace UNIOOP.App.Services
         }
         public async Task<bool> UpdateAsync(int governmentOfficerId, UpdateGovernmentOfficerDto dto)
         {
-            GovernmentOfficer? existingGovernmentOfficer = await _entityFramework.GovernmentOfficers
-                .SingleOrDefaultAsync(s => s.OfficerID == governmentOfficerId);
+            GovernmentOfficer? existingGovernmentOfficer =
+                await _governmentOfficerRepository.GetByIdForUpdateAsync(governmentOfficerId);
 
             if (existingGovernmentOfficer is null)
             {
@@ -86,28 +70,26 @@ namespace UNIOOP.App.Services
             existingGovernmentOfficer.Email = InputNormalizationHelper.NormalizeEmail(dto.Email);
             existingGovernmentOfficer.DateOfBirth = dto.DateOfBirth;
 
-
-            await _entityFramework.SaveChangesAsync();
+            await _governmentOfficerRepository.SaveChangesAsync();
 
             return true;
         }
 
         public async Task<bool> DeleteAsync(int governmentOfficerId)
         {
-            GovernmentOfficer? existingGovernmentOfficer = await _entityFramework.GovernmentOfficers
-                .SingleOrDefaultAsync(s => s.OfficerID == governmentOfficerId);
+            GovernmentOfficer? existingGovernmentOfficer =
+                await _governmentOfficerRepository.GetByIdForUpdateAsync(governmentOfficerId);
 
             if (existingGovernmentOfficer is null)
             {
                 return false;
             }
 
-            _entityFramework.GovernmentOfficers.Remove(existingGovernmentOfficer);
+            _governmentOfficerRepository.Remove(existingGovernmentOfficer);
 
-            await _entityFramework.SaveChangesAsync();
+            await _governmentOfficerRepository.SaveChangesAsync();
 
             return true;
         }
-
     }
 }

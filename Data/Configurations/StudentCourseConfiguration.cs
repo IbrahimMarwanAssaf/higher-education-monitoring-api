@@ -20,14 +20,14 @@ namespace UNIOOP.APP.Data.Configurations
 
             builder.Property(sc => sc.CourseID).IsRequired();
 
-            builder.HasOne<Student>()
-                .WithMany()
+            builder.HasOne(sc => sc.Student)
+                .WithMany(s => s.enrollmentCollection)
                 .HasForeignKey(sc => sc.StudentPersonnelID)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_StudentCourse_Student");
 
-            builder.HasOne<Course>()
-                .WithMany()
+            builder.HasOne(sc => sc.Course)
+                .WithMany(c => c.enrollmentCollection)
                 .HasForeignKey(sc => sc.CourseID)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_StudentCourse_Course");

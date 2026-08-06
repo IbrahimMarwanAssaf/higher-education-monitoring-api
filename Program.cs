@@ -2,6 +2,9 @@
 using UNIOOP.App.Data;
 using UNIOOP.App.Data.Seed;
 using UNIOOP.App.Helpers;
+using UNIOOP.App.Mappings;
+using UNIOOP.App.Repositories.Implementations;
+using UNIOOP.App.Repositories.Interfaces;
 using UNIOOP.App.Services;
 using UNIOOP.App.Services.Interfaces;
 
@@ -30,13 +33,26 @@ builder.Services.AddCors((options) =>
 
 builder.Services.AddDbContext<DataContextEF>();
 
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<MappingProfile>();
+});
+
+builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
+builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+builder.Services.AddScoped<IGovernmentOfficerRepository, GovernmentOfficerRepository>();
+builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
+builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+builder.Services.AddScoped<IUniversityRepository, UniversityRepository>();
+
 builder.Services.AddScoped<IUniversityService, UniversityService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ITeacherService, TeacherService>();
 builder.Services.AddScoped<IGovernmentOfficerService, GovernmentOfficerService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
-builder.Services.AddScoped<IDatabaseValidationHelper, DatabaseValidationHelper>();
+
+builder.Services.AddTransient<IDatabaseValidationHelper, DatabaseValidationHelper>();
 
 var app = builder.Build();
 
