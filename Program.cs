@@ -38,6 +38,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<MappingProfile>();
 });
 
+builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IGovernmentOfficerRepository, GovernmentOfficerRepository>();
 builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();

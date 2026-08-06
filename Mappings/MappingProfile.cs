@@ -69,14 +69,31 @@ namespace UNIOOP.App.Mappings
 
             CreateMap<StudentCourse, EnrollmentResponseDto>()
                 .ForMember(
+                    dest => dest.StudentID,
+                    opt => opt.MapFrom(src => src.Student.StudentID)
+                )
+                .ForMember(
                     dest => dest.StudentName,
                     opt => opt.MapFrom(src =>
                         $"{src.Student.FName} {src.Student.LName}")
                 )
                 .ForMember(
+                    dest => dest.CourseID,
+                    opt => opt.MapFrom(src => src.Course.CourseID)
+                )
+                .ForMember(
                     dest => dest.CourseName,
                     opt => opt.MapFrom(src => src.Course.CourseName)
+                )
+                .ForMember(
+                    dest => dest.UniversityID,
+                    opt => opt.MapFrom(src => src.Course.UniversityID)
+                )
+                .ForMember(
+                    dest => dest.UniversityName,
+                    opt => opt.MapFrom(src => src.Course.University.UniversityName)
                 );
+
         }
     }
 }
