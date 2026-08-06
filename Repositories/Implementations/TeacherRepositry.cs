@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using UNIOOP.App.Data;
-using UNIOOP.App.Dtos.Teachers;
 using UNIOOP.App.Models;
 using UNIOOP.App.Repositories.Interfaces;
 

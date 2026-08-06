@@ -1,5 +1,4 @@
 using UNIOOP.App.Models;
-using UNIOOP.App.Dtos.Teachers;
 
 namespace UNIOOP.App.Repositories.Interfaces
 {
