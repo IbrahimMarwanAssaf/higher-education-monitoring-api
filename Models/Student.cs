@@ -7,6 +7,9 @@ namespace UNIOOP.App.Models
         public decimal GPA { get; set; }
         public int UniversityID { get; set; }
 
+        public University University { get; set; } = null!;
+        public ICollection<StudentCourse> enrollmentCollection = [];
+
         public Student() { }
 
         public Student(

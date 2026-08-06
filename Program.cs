@@ -2,6 +2,7 @@
 using UNIOOP.App.Data;
 using UNIOOP.App.Data.Seed;
 using UNIOOP.App.Helpers;
+using UNIOOP.App.Mappings;
 using UNIOOP.App.Repositories.Implementations;
 using UNIOOP.App.Repositories.Interfaces;
 using UNIOOP.App.Services;
@@ -31,6 +32,13 @@ builder.Services.AddCors((options) =>
 });
 
 builder.Services.AddDbContext<DataContextEF>();
+
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<MappingProfile>();
+});
+
+builder.Services.AddScoped<IStudentRepository, StudentRepository>();
 builder.Services.AddScoped<IUniversityRepository, UniversityRepository>();
 
 builder.Services.AddScoped<IUniversityService, UniversityService>();

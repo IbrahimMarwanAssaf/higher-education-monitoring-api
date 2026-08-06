@@ -30,14 +30,14 @@ namespace UNIOOP.APP.Data.Configurations
                 c.CourseName
             }).IsUnique().HasDatabaseName("UX_Course_UniversityID_CourseName");
 
-            builder.HasOne<University>()
-                .WithMany()
-                .HasForeignKey(c => c.UniversityID)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasConstraintName("FK_Course_University");
+            builder.HasOne(c => c.University)
+              .WithMany(u => u.coursesCollection)
+              .HasForeignKey(c => c.UniversityID)
+              .OnDelete(DeleteBehavior.Restrict)
+              .HasConstraintName("FK_Course_University");
 
-            builder.HasOne<Teacher>()
-                .WithMany()
+            builder.HasOne(c => c.Teacher)
+                .WithMany(t => t.coursesCollection)
                 .HasForeignKey(c => c.TeacherPersonnelID)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK_Course_Teacher");

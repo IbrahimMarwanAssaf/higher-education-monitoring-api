@@ -5,6 +5,9 @@ namespace UNIOOP.App.Models
         public int CourseID { get; set; }
         public long StudentPersonnelID { get; set; }
 
+        public Student Student { get; set; } = null!;
+        public Course Course { get; set; } = null!;
+
         public StudentCourse() { }
 
         public StudentCourse(int courseID, long studentPersonnelID)

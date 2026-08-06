@@ -1,53 +1,35 @@
-using Microsoft.EntityFrameworkCore;
-using UNIOOP.App.Data;
 using UNIOOP.App.Dtos.Students;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
 using UNIOOP.App.Helpers;
+using UNIOOP.App.Repositories.Interfaces;
+using AutoMapper;
 
 namespace UNIOOP.App.Services
 {
     public class StudentService : IStudentService
     {
-        private readonly DataContextEF _entityFramework;
+        private readonly IStudentRepository _studentRepository;
+        private readonly IMapper _mapper;
 
-        public StudentService(DataContextEF context)
+        public StudentService(IStudentRepository studentRepository, IMapper mapper)
         {
-            _entityFramework = context;
+            _studentRepository = studentRepository;
+            _mapper = mapper;
         }
 
         public async Task<List<StudentResponseDto>> GetAllAsync()
         {
-            return await GetStudentResponseQuery()
-                .OrderBy(student => student.StudentID)
-                .ToListAsync();
+            var students = await _studentRepository.GetAllAsync();
+
+            return _mapper.Map<List<StudentResponseDto>>(students);
         }
+
         public async Task<StudentResponseDto?> GetSingleAsync(int studentId)
         {
-            return await GetStudentResponseQuery()
-                .Where(student => student.StudentID == studentId)
-                .SingleOrDefaultAsync();
-        }
-        private IQueryable<StudentResponseDto> GetStudentResponseQuery()
-        {
-            IQueryable<StudentResponseDto> query =
-                from student in _entityFramework.Students.AsNoTracking()
-                join university in _entityFramework.Universities.AsNoTracking()
-                    on student.UniversityID equals university.UniversityID
-                select new StudentResponseDto
-                {
-                    StudentID = student.StudentID,
-                    FName = student.FName,
-                    LName = student.LName,
-                    DateOfBirth = student.DateOfBirth,
-                    Email = student.Email,
-                    Major = student.Major,
-                    GPA = student.GPA,
+            var student = await _studentRepository.GetByIdAsync(studentId);
 
-                    UniversityID = student.UniversityID,
-                    UniversityName = university.UniversityName
-                };
-            return query;
+            return student == null ? null : _mapper.Map<StudentResponseDto>(student);
         }
         public async Task<StudentResponseDto> CreateAsync(CreateStudentDto dto)
         {
@@ -63,9 +45,8 @@ namespace UNIOOP.App.Services
                 UniversityID = dto.UniversityID
             };
 
-            _entityFramework.Students.Add(student);
-
-            await _entityFramework.SaveChangesAsync();
+            await _studentRepository.AddAsync(student);
+            await _studentRepository.SaveChangesAsync();
 
             StudentResponseDto? createdStudent = await GetSingleAsync(student.StudentID);
 
@@ -79,8 +60,7 @@ namespace UNIOOP.App.Services
         }
         public async Task<bool> UpdateAsync(int studentId, UpdateStudentDto dto)
         {
-            Student? existingStudent = await _entityFramework.Students
-                .SingleOrDefaultAsync(s => s.StudentID == studentId);
+            Student? existingStudent = await _studentRepository.GetByIdForUpdateAsync(studentId);
 
             if (existingStudent is null)
             {
@@ -95,24 +75,23 @@ namespace UNIOOP.App.Services
             existingStudent.GPA = dto.GPA;
             existingStudent.UniversityID = dto.UniversityID;
 
-            await _entityFramework.SaveChangesAsync();
+            await _studentRepository.SaveChangesAsync();
 
             return true;
         }
 
         public async Task<bool> DeleteAsync(int studentId)
         {
-            Student? existingStudent = await _entityFramework.Students
-                .SingleOrDefaultAsync(s => s.StudentID == studentId);
+            Student? existingStudent = await _studentRepository.GetByIdForUpdateAsync(studentId);
 
             if (existingStudent is null)
             {
                 return false;
             }
 
-            _entityFramework.Students.Remove(existingStudent);
+            _studentRepository.Remove(existingStudent);
 
-            await _entityFramework.SaveChangesAsync();
+            await _studentRepository.SaveChangesAsync();
 
             return true;
         }
