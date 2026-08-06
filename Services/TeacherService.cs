@@ -1,56 +1,34 @@
-using Microsoft.EntityFrameworkCore;
-using UNIOOP.App.Data;
 using UNIOOP.App.Dtos.Teachers;
 using UNIOOP.App.Models;
 using UNIOOP.App.Services.Interfaces;
 using UNIOOP.App.Helpers;
+using UNIOOP.App.Repositories.Interfaces;
+using AutoMapper;
 
 namespace UNIOOP.App.Services
 {
     public class TeacherService : ITeacherService
     {
-        private readonly DataContextEF _entityFramework;
+        private readonly ITeacherRepository _teacherRepository;
+        private readonly IMapper _mapper;
 
-        public TeacherService(DataContextEF context)
+        public TeacherService(ITeacherRepository teacherRepository, IMapper mapper)
         {
-            _entityFramework = context;
+            _teacherRepository = teacherRepository;
+            _mapper = mapper;
         }
 
         public async Task<List<TeacherResponseDto>> GetAllAsync()
         {
-            return await GetTeacherResponseQuery()
-                .OrderBy(teacher => teacher.TeacherID)
-                .ToListAsync();
+            var teachers = await _teacherRepository.GetAllAsync();
+            return _mapper.Map<List<TeacherResponseDto>>(teachers);
         }
         public async Task<TeacherResponseDto?> GetSingleAsync(int teacherId)
         {
-            return await GetTeacherResponseQuery()
-                .Where(teacher => teacher.TeacherID == teacherId)
-                .SingleOrDefaultAsync();
+            var teacher = await _teacherRepository.GetByIdAsync(teacherId);
+            return teacher == null ? null : _mapper.Map<TeacherResponseDto>(teacher);
         }
 
-        private IQueryable<TeacherResponseDto> GetTeacherResponseQuery()
-        {
-            IQueryable<TeacherResponseDto> query =
-                from teacher in _entityFramework.Teachers.AsNoTracking()
-                join university in _entityFramework.Universities.AsNoTracking()
-                    on teacher.UniversityID equals university.UniversityID
-                select new TeacherResponseDto
-                {
-                    TeacherID = teacher.TeacherID,
-                    FName = teacher.FName,
-                    LName = teacher.LName,
-                    DateOfBirth = teacher.DateOfBirth,
-                    Email = teacher.Email,
-                    Department = teacher.Department,
-                    Salary = teacher.Salary,
-
-                    MinistryDegreeID = teacher.MinistryDegreeID,
-                    UniversityID = teacher.UniversityID,
-                    UniversityName = university.UniversityName
-                };
-            return query;
-        }
         public async Task<TeacherResponseDto> CreateAsync(CreateTeacherDto dto)
         {
             var teacher = new Teacher
@@ -65,9 +43,9 @@ namespace UNIOOP.App.Services
                 UniversityID = dto.UniversityID,
                 MinistryDegreeID = dto.MinistryDegreeID
             };
-            _entityFramework.Teachers.Add(teacher);
+            await _teacherRepository.AddAsync(teacher);
 
-            await _entityFramework.SaveChangesAsync();
+            await _teacherRepository.SaveChangesAsync();
 
             TeacherResponseDto? createdTeacher = await GetSingleAsync(teacher.TeacherID);
 
@@ -81,8 +59,7 @@ namespace UNIOOP.App.Services
         }
         public async Task<bool> UpdateAsync(int teacherId, UpdateTeacherDto dto)
         {
-            Teacher? existingTeacher = await _entityFramework.Teachers
-                .SingleOrDefaultAsync(s => s.TeacherID == teacherId);
+            Teacher? existingTeacher = await _teacherRepository.GetByIdForUpdateAsync(teacherId);
 
             if (existingTeacher is null)
             {
@@ -98,24 +75,23 @@ namespace UNIOOP.App.Services
             existingTeacher.UniversityID = dto.UniversityID;
             existingTeacher.MinistryDegreeID = dto.MinistryDegreeID;
 
-            await _entityFramework.SaveChangesAsync();
+            await _teacherRepository.SaveChangesAsync();
 
             return true;
         }
 
         public async Task<bool> DeleteAsync(int teacherId)
         {
-            Teacher? existingTeacher = await _entityFramework.Teachers
-                .SingleOrDefaultAsync(s => s.TeacherID == teacherId);
+            Teacher? existingTeacher = await _teacherRepository.GetByIdForUpdateAsync(teacherId);
 
             if (existingTeacher is null)
             {
                 return false;
             }
 
-            _entityFramework.Teachers.Remove(existingTeacher);
+            _teacherRepository.Remove(existingTeacher);
 
-            await _entityFramework.SaveChangesAsync();
+            await _teacherRepository.SaveChangesAsync();
 
             return true;
         }
