@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using UNIOOP.App.Data;
 using UNIOOP.App.Data.Seed;
+using UNIOOP.App.Exceptions;
 using UNIOOP.App.Helpers;
 using UNIOOP.App.Mappings;
 using UNIOOP.App.Repositories.Implementations;
@@ -54,7 +55,17 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 
 builder.Services.AddTransient<IDatabaseValidationHelper, DatabaseValidationHelper>();
 
+builder.Host.UseDefaultServiceProvider(options =>
+{
+    options.ValidateScopes = true;
+    options.ValidateOnBuild = true;
+});
+
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 var app = builder.Build();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

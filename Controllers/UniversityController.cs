@@ -28,90 +28,28 @@ public class UniversityController : ControllerBase
     [HttpGet("GetSingle/{universityId}")]
     public async Task<ActionResult<UniversityResponseDto>> GetSingle(int universityId)
     {
-        UniversityResponseDto? university = await _universityService.GetSingleAsync(universityId);
-
-        if (university is null)
-        {
-            return NotFound(new
-            {
-                message = $"University with ID: {universityId} was not found."
-            });
-        }
-
+        UniversityResponseDto university = await _universityService.GetSingleAsync(universityId);
         return Ok(university);
     }
 
     [HttpPost("Create")]
     public async Task<ActionResult<UniversityResponseDto>> Create(UniversityCreateUpdateDto dto)
     {
-        if (await _validationHelper.UniversityNameExistsAsync(dto.UniversityName))
-        {
-            return Conflict(new
-            {
-                message = "A university with this name already exists."
-            });
-        }
-
         UniversityResponseDto university = await _universityService.CreateAsync(dto);
-
         return CreatedAtAction(nameof(GetSingle), new { universityId = university.UniversityID }, university);
     }
 
     [HttpPut("Update/{universityId}")]
     public async Task<ActionResult> Update(int universityId, UniversityCreateUpdateDto dto)
     {
-        if (!await _validationHelper.UniversityExistsAsync(universityId))
-        {
-            return NotFound();
-        }
-
-        if (await _validationHelper.UniversityNameExistsAsync(dto.UniversityName, universityId))
-        {
-            return Conflict(new
-            {
-                message = "Another university already uses this name."
-            });
-        }
-
-        bool updated = await _universityService.UpdateAsync(universityId, dto);
-
-        if (!updated)
-        {
-            return NotFound(new
-            {
-                message = $"University with ID: {universityId} was not found."
-            });
-        }
-
+        await _universityService.UpdateAsync(universityId, dto);
         return NoContent();
     }
 
     [HttpDelete("Delete/{universityId}")]
     public async Task<IActionResult> Delete(int universityId)
     {
-        if (!await _validationHelper.UniversityExistsAsync(universityId))
-        {
-            return NotFound();
-        }
-
-        if (await _validationHelper.UniversityHasDependenciesAsync(universityId))
-        {
-            return Conflict(new
-            {
-                message = "The university has related students, teachers or courses."
-            });
-        }
-
-        bool deleted = await _universityService.DeleteAsync(universityId);
-
-        if (!deleted)
-        {
-            return NotFound(new
-            {
-                message = $"University with ID: {universityId} was not found."
-            });
-        }
-
+        await _universityService.DeleteAsync(universityId);
         return NoContent();
     }
 }
