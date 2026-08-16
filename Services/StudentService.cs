@@ -4,42 +4,70 @@ using UNIOOP.App.Services.Interfaces;
 using UNIOOP.App.Helpers;
 using UNIOOP.App.Repositories.Interfaces;
 using AutoMapper;
+using UNIOOP.App.Exceptions;
 
 namespace UNIOOP.App.Services
 {
     public class StudentService : IStudentService
     {
         private readonly IStudentRepository _studentRepository;
+        private readonly IDatabaseValidationHelper _databaseValidationHelper;
         private readonly IMapper _mapper;
 
-        public StudentService(IStudentRepository studentRepository, IMapper mapper)
+        public StudentService(IStudentRepository studentRepository,
+            IDatabaseValidationHelper databaseValidationHelper,
+            IMapper mapper)
         {
             _studentRepository = studentRepository;
+            _databaseValidationHelper = databaseValidationHelper;
             _mapper = mapper;
         }
 
         public async Task<List<StudentResponseDto>> GetAllAsync()
         {
             var students = await _studentRepository.GetAllAsync();
-
             return _mapper.Map<List<StudentResponseDto>>(students);
         }
 
-        public async Task<StudentResponseDto?> GetSingleAsync(int studentId)
+        public async Task<StudentResponseDto> GetSingleAsync(int studentId)
         {
             var student = await _studentRepository.GetByIdAsync(studentId);
 
-            return student == null ? null : _mapper.Map<StudentResponseDto>(student);
+            if (student is null)
+            {
+                throw new NotFoundException($"Student with ID {studentId} was not found.");
+            }
+
+            return _mapper.Map<StudentResponseDto>(student);
         }
+
         public async Task<StudentResponseDto> CreateAsync(CreateStudentDto dto)
         {
+            string normalizedSsn = InputNormalizationHelper.NormalizeText(dto.SSN);
+            string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
+
+            if (!await _databaseValidationHelper.UniversityExistsAsync(dto.UniversityID))
+            {
+                throw new NotFoundException($"The selected university with Id {dto.UniversityID} does not exist");
+            }
+
+            if (await _databaseValidationHelper.SSNExistsAsync(normalizedSsn))
+            {
+                throw new ConflictException($"The SSN {normalizedSsn} is already in use");
+            }
+
+            if (await _databaseValidationHelper.StudentEmailExistsAsync(normalizedEmail))
+            {
+                throw new ConflictException($"The email {normalizedEmail} is already in use");
+            }
+
             var student = new Student
             {
-                SSN = InputNormalizationHelper.NormalizeSsn(dto.SSN),
+                SSN = normalizedSsn,
                 FName = InputNormalizationHelper.NormalizeText(dto.FName),
                 LName = InputNormalizationHelper.NormalizeText(dto.LName),
                 DateOfBirth = dto.DateOfBirth,
-                Email = InputNormalizationHelper.NormalizeEmail(dto.Email),
+                Email = normalizedEmail,
                 Major = InputNormalizationHelper.NormalizeText(dto.Major),
                 GPA = dto.GPA,
                 UniversityID = dto.UniversityID
@@ -48,53 +76,57 @@ namespace UNIOOP.App.Services
             await _studentRepository.AddAsync(student);
             await _studentRepository.SaveChangesAsync();
 
-            StudentResponseDto? createdStudent = await GetSingleAsync(student.StudentID);
-
-            if (createdStudent is null)
-            {
-                throw new InvalidOperationException(
-                    "The student was created but could not be retrieved.");
-            }
-
-            return createdStudent;
+            return await GetSingleAsync(student.StudentID);
         }
-        public async Task<bool> UpdateAsync(int studentId, UpdateStudentDto dto)
+        public async Task UpdateAsync(int studentId, UpdateStudentDto dto)
         {
             Student? existingStudent = await _studentRepository.GetByIdForUpdateAsync(studentId);
 
             if (existingStudent is null)
             {
-                return false;
+                throw new NotFoundException($"Student with ID {studentId} was not found");
+            }
+
+            string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
+
+            if (await _databaseValidationHelper.StudentEmailExistsAsync(normalizedEmail, studentId))
+            {
+                throw new ConflictException($"Another person already uses this email {normalizedEmail}");
+            }
+
+            if (!await _databaseValidationHelper.UniversityExistsAsync(dto.UniversityID))
+            {
+                throw new NotFoundException($"The selected university with Id {dto.UniversityID} does not exist");
             }
 
             existingStudent.FName = InputNormalizationHelper.NormalizeText(dto.FName);
             existingStudent.LName = InputNormalizationHelper.NormalizeText(dto.LName);
-            existingStudent.Email = InputNormalizationHelper.NormalizeEmail(dto.Email);
+            existingStudent.Email = normalizedEmail;
             existingStudent.Major = InputNormalizationHelper.NormalizeText(dto.Major);
             existingStudent.DateOfBirth = dto.DateOfBirth;
             existingStudent.GPA = dto.GPA;
             existingStudent.UniversityID = dto.UniversityID;
 
             await _studentRepository.SaveChangesAsync();
-
-            return true;
         }
 
-        public async Task<bool> DeleteAsync(int studentId)
+        public async Task DeleteAsync(int studentId)
         {
             Student? existingStudent = await _studentRepository.GetByIdForUpdateAsync(studentId);
 
             if (existingStudent is null)
             {
-                return false;
+                throw new NotFoundException($"Student with ID {studentId} was not found");
+            }
+
+            if (await _databaseValidationHelper.StudentHasEnrollmentsAsync(studentId))
+            {
+                throw new ConflictException("The student cannot be deleted while enrolled in courses");
             }
 
             _studentRepository.Remove(existingStudent);
 
             await _studentRepository.SaveChangesAsync();
-
-            return true;
         }
-
     }
 }

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.Universities;
-using UNIOOP.App.Helpers;
 using UNIOOP.App.Services.Interfaces;
 
 namespace UNIOOP.APP.Controllers;
@@ -10,12 +9,10 @@ namespace UNIOOP.APP.Controllers;
 public class UniversityController : ControllerBase
 {
     private readonly IUniversityService _universityService;
-    private readonly IDatabaseValidationHelper _validationHelper;
 
-    public UniversityController(IUniversityService universityService, IDatabaseValidationHelper validationHelper)
+    public UniversityController(IUniversityService universityService)
     {
         _universityService = universityService;
-        _validationHelper = validationHelper;
     }
 
     [HttpGet("GetAll")]
