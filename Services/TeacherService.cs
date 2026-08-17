@@ -4,17 +4,22 @@ using UNIOOP.App.Services.Interfaces;
 using UNIOOP.App.Helpers;
 using UNIOOP.App.Repositories.Interfaces;
 using AutoMapper;
+using UNIOOP.App.Exceptions;
 
 namespace UNIOOP.App.Services
 {
     public class TeacherService : ITeacherService
     {
         private readonly ITeacherRepository _teacherRepository;
+        private readonly IDatabaseValidationHelper _databaseValidationHelper;
         private readonly IMapper _mapper;
 
-        public TeacherService(ITeacherRepository teacherRepository, IMapper mapper)
+        public TeacherService(ITeacherRepository teacherRepository,
+        IDatabaseValidationHelper databaseValidationHelper,
+        IMapper mapper)
         {
             _teacherRepository = teacherRepository;
+            _databaseValidationHelper = databaseValidationHelper;
             _mapper = mapper;
         }
 
@@ -23,52 +28,81 @@ namespace UNIOOP.App.Services
             var teachers = await _teacherRepository.GetAllAsync();
             return _mapper.Map<List<TeacherResponseDto>>(teachers);
         }
-        public async Task<TeacherResponseDto?> GetSingleAsync(int teacherId)
+        public async Task<TeacherResponseDto> GetSingleAsync(int teacherId)
         {
             var teacher = await _teacherRepository.GetByIdAsync(teacherId);
-            return teacher == null ? null : _mapper.Map<TeacherResponseDto>(teacher);
+
+            if (teacher is null)
+            {
+                throw new NotFoundException($"Teacher with ID {teacherId} was not found.");
+            }
+
+            return _mapper.Map<TeacherResponseDto>(teacher);
         }
 
         public async Task<TeacherResponseDto> CreateAsync(CreateTeacherDto dto)
         {
+            string normalizedSsn = InputNormalizationHelper.NormalizeText(dto.SSN);
+            string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
+
+            if (!await _databaseValidationHelper.UniversityExistsAsync(dto.UniversityID))
+            {
+                throw new NotFoundException($"The selected university with Id {dto.UniversityID} does not exist");
+            }
+
+            if (await _databaseValidationHelper.SSNExistsAsync(normalizedSsn))
+            {
+                throw new ConflictException($"The SSN {normalizedSsn} is already in use");
+            }
+
+            if (await _databaseValidationHelper.TeacherEmailExistsAsync(normalizedEmail))
+            {
+                throw new ConflictException($"The email {normalizedEmail} is already in use");
+            }
+
+
             var teacher = new Teacher
             {
-                SSN = InputNormalizationHelper.NormalizeSsn(dto.SSN),
+                SSN = normalizedSsn,
                 FName = InputNormalizationHelper.NormalizeText(dto.FName),
                 LName = InputNormalizationHelper.NormalizeText(dto.LName),
                 DateOfBirth = dto.DateOfBirth,
-                Email = InputNormalizationHelper.NormalizeEmail(dto.Email),
+                Email = normalizedEmail,
                 Department = InputNormalizationHelper.NormalizeText(dto.Department),
                 Salary = dto.Salary,
                 UniversityID = dto.UniversityID,
                 MinistryDegreeID = dto.MinistryDegreeID
             };
-            await _teacherRepository.AddAsync(teacher);
 
+            await _teacherRepository.AddAsync(teacher);
             await _teacherRepository.SaveChangesAsync();
 
-            TeacherResponseDto? createdTeacher = await GetSingleAsync(teacher.TeacherID);
-
-            if (createdTeacher is null)
-            {
-                throw new InvalidOperationException(
-                    "The teacher was created but could not be retrieved.");
-            }
-
-            return createdTeacher;
+            return await GetSingleAsync(teacher.TeacherID);
         }
-        public async Task<bool> UpdateAsync(int teacherId, UpdateTeacherDto dto)
+        public async Task UpdateAsync(int teacherId, UpdateTeacherDto dto)
         {
             Teacher? existingTeacher = await _teacherRepository.GetByIdForUpdateAsync(teacherId);
 
             if (existingTeacher is null)
             {
-                return false;
+                throw new NotFoundException($"Teacher with ID {teacherId} was not found");
+            }
+
+            string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
+
+            if (await _databaseValidationHelper.TeacherEmailExistsAsync(normalizedEmail, teacherId))
+            {
+                throw new ConflictException($"Another person already uses this email {normalizedEmail}");
+            }
+
+            if (!await _databaseValidationHelper.UniversityExistsAsync(dto.UniversityID))
+            {
+                throw new NotFoundException($"The selected university with Id {dto.UniversityID} does not exist");
             }
 
             existingTeacher.FName = InputNormalizationHelper.NormalizeText(dto.FName);
             existingTeacher.LName = InputNormalizationHelper.NormalizeText(dto.LName);
-            existingTeacher.Email = InputNormalizationHelper.NormalizeEmail(dto.Email);
+            existingTeacher.Email = normalizedEmail;
             existingTeacher.Department = InputNormalizationHelper.NormalizeText(dto.Department);
             existingTeacher.DateOfBirth = dto.DateOfBirth;
             existingTeacher.Salary = dto.Salary;
@@ -76,24 +110,20 @@ namespace UNIOOP.App.Services
             existingTeacher.MinistryDegreeID = dto.MinistryDegreeID;
 
             await _teacherRepository.SaveChangesAsync();
-
-            return true;
         }
 
-        public async Task<bool> DeleteAsync(int teacherId)
+        public async Task DeleteAsync(int teacherId)
         {
             Teacher? existingTeacher = await _teacherRepository.GetByIdForUpdateAsync(teacherId);
 
             if (existingTeacher is null)
             {
-                return false;
+                throw new NotFoundException($"Teacher with ID {teacherId} was not found");
             }
 
             _teacherRepository.Remove(existingTeacher);
 
             await _teacherRepository.SaveChangesAsync();
-
-            return true;
         }
     }
 }

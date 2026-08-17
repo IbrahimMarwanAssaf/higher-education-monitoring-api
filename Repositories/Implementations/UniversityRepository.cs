@@ -27,7 +27,7 @@ namespace UNIOOP.App.Repositories.Implementations
 
         public async Task<University?> GetByIdForUpdateAsync(int universityId)
         {
-            return await _entityFramework.Universities
+            return await _entityFramework.Universities.AsTracking()
                 .SingleOrDefaultAsync(u => u.UniversityID == universityId);
         }
 
