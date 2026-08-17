@@ -10,5 +10,8 @@ namespace UNIOOP.App.Repositories.Interfaces
         Task AddAsync(University university);
         void Remove(University university);
         Task SaveChangesAsync();
+        Task<bool> ExistsAsync(int universityId);
+        Task<bool> NameExistsAsync(string universityName, int? excludeUniversityId = null);
+        Task<bool> HasDependenciesAsync(int universityId);
     }
 }

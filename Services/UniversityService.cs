@@ -10,12 +10,10 @@ namespace UNIOOP.App.Services
     public class UniversityService : IUniversityService
     {
         private readonly IUniversityRepository _universityRepository;
-        private readonly IDatabaseValidationHelper _databaseValidationHelper;
 
-        public UniversityService(IUniversityRepository universityRepository, IDatabaseValidationHelper databaseValidationHelper)
+        public UniversityService(IUniversityRepository universityRepository)
         {
             _universityRepository = universityRepository;
-            _databaseValidationHelper = databaseValidationHelper;
         }
 
         public async Task<List<UniversityResponseDto>> GetAllAsync()
@@ -48,7 +46,7 @@ namespace UNIOOP.App.Services
         {
             string normalizedName = InputNormalizationHelper.NormalizeText(dto.UniversityName);
 
-            if (await _databaseValidationHelper.UniversityNameExistsAsync(normalizedName))
+            if (await _universityRepository.NameExistsAsync(normalizedName))
             {
                 throw new ConflictException($"A university with the name '{normalizedName}' already exists.");
             }
@@ -79,7 +77,7 @@ namespace UNIOOP.App.Services
 
             string normalizedName = InputNormalizationHelper.NormalizeText(dto.UniversityName);
 
-            if (await _databaseValidationHelper.UniversityNameExistsAsync(normalizedName, universityId))
+            if (await _universityRepository.NameExistsAsync(normalizedName, universityId))
             {
                 throw new ConflictException($"A university with the name '{normalizedName}' already exists.");
             }
@@ -97,7 +95,7 @@ namespace UNIOOP.App.Services
                 throw new NotFoundException($"University with ID {universityId} was not found.");
             }
 
-            if (await _databaseValidationHelper.UniversityHasDependenciesAsync(universityId))
+            if (await _universityRepository.HasDependenciesAsync(universityId))
             {
                 throw new ConflictException($"The university cannot be deleted because it has related students, teachers or courses.");
             }
