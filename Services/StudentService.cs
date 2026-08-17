@@ -11,14 +11,18 @@ namespace UNIOOP.App.Services
     public class StudentService : IStudentService
     {
         private readonly IStudentRepository _studentRepository;
+        private readonly IUniversityRepository _universityRepository;
         private readonly IDatabaseValidationHelper _databaseValidationHelper;
         private readonly IMapper _mapper;
 
-        public StudentService(IStudentRepository studentRepository,
+        public StudentService(
+            IStudentRepository studentRepository,
+            IUniversityRepository universityRepository,
             IDatabaseValidationHelper databaseValidationHelper,
             IMapper mapper)
         {
             _studentRepository = studentRepository;
+            _universityRepository = universityRepository;
             _databaseValidationHelper = databaseValidationHelper;
             _mapper = mapper;
         }
@@ -46,7 +50,7 @@ namespace UNIOOP.App.Services
             string normalizedSsn = InputNormalizationHelper.NormalizeText(dto.SSN);
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (!await _databaseValidationHelper.UniversityExistsAsync(dto.UniversityID))
+            if (!await _universityRepository.ExistsAsync(dto.UniversityID))
             {
                 throw new NotFoundException($"The selected university with Id {dto.UniversityID} does not exist");
             }
@@ -56,7 +60,7 @@ namespace UNIOOP.App.Services
                 throw new ConflictException($"The SSN {normalizedSsn} is already in use");
             }
 
-            if (await _databaseValidationHelper.StudentEmailExistsAsync(normalizedEmail))
+            if (await _studentRepository.EmailExistsAsync(normalizedEmail))
             {
                 throw new ConflictException($"The email {normalizedEmail} is already in use");
             }
@@ -89,12 +93,12 @@ namespace UNIOOP.App.Services
 
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (await _databaseValidationHelper.StudentEmailExistsAsync(normalizedEmail, studentId))
+            if (await _studentRepository.EmailExistsAsync(normalizedEmail, studentId))
             {
                 throw new ConflictException($"Another person already uses this email {normalizedEmail}");
             }
 
-            if (!await _databaseValidationHelper.UniversityExistsAsync(dto.UniversityID))
+            if (!await _universityRepository.ExistsAsync(dto.UniversityID))
             {
                 throw new NotFoundException($"The selected university with Id {dto.UniversityID} does not exist");
             }
@@ -119,7 +123,7 @@ namespace UNIOOP.App.Services
                 throw new NotFoundException($"Student with ID {studentId} was not found");
             }
 
-            if (await _databaseValidationHelper.StudentHasEnrollmentsAsync(studentId))
+            if (await _studentRepository.HasEnrollmentsAsync(studentId))
             {
                 throw new ConflictException("The student cannot be deleted while enrolled in courses");
             }
