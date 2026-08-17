@@ -49,5 +49,25 @@ namespace UNIOOP.App.Repositories.Implementations
         {
             await _entityFramework.SaveChangesAsync();
         }
+
+        public async Task<bool> ExistsAsync(int teacherId)
+        {
+            return await _entityFramework.Teachers.AnyAsync(t => t.TeacherID == teacherId);
+        }
+
+        public async Task<bool> EmailExistsAsync(string email, int? excludeTeacherId = null)
+        {
+            return await _entityFramework.Teachers
+                .AnyAsync(t =>
+                    t.Email == email &&
+                    (!excludeTeacherId.HasValue ||
+                     t.TeacherID != excludeTeacherId.Value));
+        }
+
+        public async Task<bool> BelongsToUniversityAsync(int teacherId, int universityId)
+        {
+            return await _entityFramework.Teachers.AnyAsync(t => t.TeacherID == teacherId && t.UniversityID == universityId);
+        }
+
     }
 }
