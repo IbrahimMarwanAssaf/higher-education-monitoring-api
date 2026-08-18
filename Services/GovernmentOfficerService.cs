@@ -49,7 +49,7 @@ namespace UNIOOP.App.Services
                 throw new ConflictException($"The SSN {normalizedSsn} is already in use");
             }
 
-            if (await _databaseValidationHelper.GovernmentOfficerEmailExistsAsync(normalizedEmail))
+            if (await _governmentOfficerRepository.EmailExistsAsync(normalizedEmail))
             {
                 throw new ConflictException($"The email {normalizedEmail} is already in use");
             }
@@ -80,7 +80,7 @@ namespace UNIOOP.App.Services
 
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (await _databaseValidationHelper.GovernmentOfficerEmailExistsAsync(normalizedEmail, governmentOfficerId))
+            if (await _governmentOfficerRepository.EmailExistsAsync(normalizedEmail, governmentOfficerId))
             {
                 throw new ConflictException($"Another person already uses this email: {normalizedEmail}");
             }
