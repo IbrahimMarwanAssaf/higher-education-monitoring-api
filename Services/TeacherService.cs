@@ -11,17 +11,17 @@ namespace UNIOOP.App.Services
     public class TeacherService : ITeacherService
     {
         private readonly ITeacherRepository _teacherRepository;
-        private readonly IDatabaseValidationHelper _databaseValidationHelper;
+        private readonly IPersonnelRepository _personnelRepository;
         private readonly IUniversityRepository _universityRepository;
         private readonly IMapper _mapper;
 
         public TeacherService(ITeacherRepository teacherRepository,
-        IDatabaseValidationHelper databaseValidationHelper,
+        IPersonnelRepository personnelRepository,
         IUniversityRepository universityRepository,
         IMapper mapper)
         {
             _teacherRepository = teacherRepository;
-            _databaseValidationHelper = databaseValidationHelper;
+            _personnelRepository = personnelRepository;
             _universityRepository = universityRepository;
             _mapper = mapper;
         }
@@ -53,7 +53,7 @@ namespace UNIOOP.App.Services
                 throw new NotFoundException($"The selected university with Id {dto.UniversityID} does not exist");
             }
 
-            if (await _databaseValidationHelper.SSNExistsAsync(normalizedSsn))
+            if (await _personnelRepository.SSNExistsAsync(normalizedSsn))
             {
                 throw new ConflictException($"The SSN {normalizedSsn} is already in use");
             }

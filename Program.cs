@@ -2,7 +2,6 @@
 using UNIOOP.App.Data;
 using UNIOOP.App.Data.Seed;
 using UNIOOP.App.Exceptions;
-using UNIOOP.App.Helpers;
 using UNIOOP.App.Mappings;
 using UNIOOP.App.Repositories.Implementations;
 using UNIOOP.App.Repositories.Interfaces;
@@ -45,6 +44,7 @@ builder.Services.AddScoped<IGovernmentOfficerRepository, GovernmentOfficerReposi
 builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
 builder.Services.AddScoped<IStudentRepository, StudentRepository>();
 builder.Services.AddScoped<IUniversityRepository, UniversityRepository>();
+builder.Services.AddScoped<IPersonnelRepository, PersonnelRepository>();
 
 builder.Services.AddScoped<IUniversityService, UniversityService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
@@ -52,8 +52,6 @@ builder.Services.AddScoped<ITeacherService, TeacherService>();
 builder.Services.AddScoped<IGovernmentOfficerService, GovernmentOfficerService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
-
-builder.Services.AddTransient<IDatabaseValidationHelper, DatabaseValidationHelper>();
 
 builder.Host.UseDefaultServiceProvider(options =>
 {
