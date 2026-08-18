@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.GovernmentOfficers;
+using UNIOOP.App.Filters;
 using UNIOOP.App.Services.Interfaces;
 
 namespace UNIOOP.APP.Controllers;
@@ -48,7 +49,7 @@ public class GovernmentOfficersController : ControllerBase
         await _governmentOfficerService.UpdateAsync(governmentOfficerId, dto);
         return NoContent();
     }
-
+    [ServiceFilter(typeof(AuditDeleteFilter))]
     [HttpDelete("Delete/{governmentOfficerId}")]
     public async Task<ActionResult> Delete(int governmentOfficerId)
     {

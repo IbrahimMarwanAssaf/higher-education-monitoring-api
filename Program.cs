@@ -9,12 +9,14 @@ using UNIOOP.App.Repositories.Implementations;
 using UNIOOP.App.Repositories.Interfaces;
 using UNIOOP.App.Services;
 using UNIOOP.App.Services.Interfaces;
+using UNIOOP.App.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add(new ProducesAttribute("application/json"));
+    options.Filters.Add<ExecutionTimeFilter>();
 });
 builder.Services.AddSwaggerGen();
 
@@ -59,6 +61,8 @@ builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 
 builder.Services.AddScoped<ExceptionHelper>();
+builder.Services.AddScoped<ExecutionTimeFilter>();
+builder.Services.AddScoped<AuditDeleteFilter>();
 
 builder.Host.UseDefaultServiceProvider(options =>
 {

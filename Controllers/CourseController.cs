@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.Courses;
+using UNIOOP.App.Filters;
 using UNIOOP.App.Services.Interfaces;
 
 namespace UNIOOP.APP.Controllers;
@@ -42,6 +43,7 @@ public class CourseController : ControllerBase
         return NoContent();
     }
 
+    [ServiceFilter(typeof(AuditDeleteFilter))]
     [HttpDelete("Delete/{courseId}")]
     public async Task<ActionResult> Delete(int courseId)
     {

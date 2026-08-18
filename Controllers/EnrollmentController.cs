@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.Enrollments;
+using UNIOOP.App.Filters;
 using UNIOOP.App.Services.Interfaces;
 
 namespace UNIOOP.App.Controllers
@@ -45,6 +46,7 @@ namespace UNIOOP.App.Controllers
                 new { studentId = enrollment.StudentID, courseId = enrollment.CourseID }, enrollment);
         }
 
+        [ServiceFilter(typeof(AuditDeleteFilter))]
         [HttpDelete("Unenroll/{studentId}/{courseId}")]
         public async Task<IActionResult> Unenroll(int studentId, int courseId)
         {
