@@ -1,7 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using UNIOOP.App.Data;
 using UNIOOP.App.Data.Seed;
 using UNIOOP.App.Exceptions;
+using UNIOOP.App.Helpers;
 using UNIOOP.App.Mappings;
 using UNIOOP.App.Repositories.Implementations;
 using UNIOOP.App.Repositories.Interfaces;
@@ -10,7 +12,10 @@ using UNIOOP.App.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add(new ProducesAttribute("application/json"));
+});
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors((options) =>
@@ -52,6 +57,8 @@ builder.Services.AddScoped<ITeacherService, TeacherService>();
 builder.Services.AddScoped<IGovernmentOfficerService, GovernmentOfficerService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+
+builder.Services.AddScoped<ExceptionHelper>();
 
 builder.Host.UseDefaultServiceProvider(options =>
 {
