@@ -11,5 +11,7 @@ namespace UNIOOP.App.Repositories.Interfaces
         Task AddAsync(StudentCourse enrollment);
         void Remove(StudentCourse enrollment);
         Task SaveChangesAsync();
+        Task<bool> ExistsAsync(int studentId, int courseId);
+        Task<bool> StudentAndCourseSameUniversityAsync(int studentId, int courseId);
     }
 }

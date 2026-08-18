@@ -56,5 +56,17 @@ namespace UNIOOP.App.Repositories.Implementations
         {
             await _entityFramework.SaveChangesAsync();
         }
+        public async Task<bool> ExistsAsync(int studentId, int courseId)
+        {
+            return await _entityFramework.StudentCourses
+                .AnyAsync(sc => sc.Student.StudentID == studentId && sc.Course.CourseID == courseId);
+        }
+
+        public async Task<bool> StudentAndCourseSameUniversityAsync(int studentId, int courseId)
+        {
+            return await _entityFramework.StudentCourses
+                .AnyAsync(sc => sc.Student.StudentID == studentId && sc.Course.CourseID == courseId &&
+                    sc.Student.UniversityID == sc.Course.UniversityID);
+        }
     }
 }
