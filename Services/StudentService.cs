@@ -1,29 +1,24 @@
-using UNIOOP.App.Dtos.Students;
-using UNIOOP.App.Models;
-using UNIOOP.App.Services.Interfaces;
-using UNIOOP.App.Helpers;
-using UNIOOP.App.Repositories.Interfaces;
 using AutoMapper;
-using UNIOOP.App.Exceptions;
+using UNIOOP.App.Dtos.Students;
+using UNIOOP.App.Helpers;
+using UNIOOP.App.Models;
+using UNIOOP.App.Repositories.Interfaces;
+using UNIOOP.App.Services.Interfaces;
 
 namespace UNIOOP.App.Services
 {
     public class StudentService : IStudentService
     {
         private readonly IStudentRepository _studentRepository;
-        private readonly IUniversityRepository _universityRepository;
-        private readonly IPersonnelRepository _personnelRepository;
+        private readonly ExceptionHelper _exceptionHelper;
         private readonly IMapper _mapper;
 
-        public StudentService(
-            IStudentRepository studentRepository,
-            IUniversityRepository universityRepository,
-            IPersonnelRepository personnelRepository,
+        public StudentService(IStudentRepository studentRepository,
+            ExceptionHelper exceptionHelper,
             IMapper mapper)
         {
             _studentRepository = studentRepository;
-            _universityRepository = universityRepository;
-            _personnelRepository = personnelRepository;
+            _exceptionHelper = exceptionHelper;
             _mapper = mapper;
         }
 
@@ -39,7 +34,7 @@ namespace UNIOOP.App.Services
 
             if (student is null)
             {
-                throw new NotFoundException($"Student with ID {studentId} was not found.");
+                throw _exceptionHelper.NotFound("Student", studentId);
             }
 
             return _mapper.Map<StudentResponseDto>(student);
@@ -50,20 +45,9 @@ namespace UNIOOP.App.Services
             string normalizedSsn = InputNormalizationHelper.NormalizeText(dto.SSN);
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (!await _universityRepository.ExistsAsync(dto.UniversityID))
-            {
-                throw new NotFoundException($"The selected university with Id {dto.UniversityID} does not exist");
-            }
-
-            if (await _personnelRepository.SSNExistsAsync(normalizedSsn))
-            {
-                throw new ConflictException($"The SSN {normalizedSsn} is already in use");
-            }
-
-            if (await _studentRepository.EmailExistsAsync(normalizedEmail))
-            {
-                throw new ConflictException($"The email {normalizedEmail} is already in use");
-            }
+            await _exceptionHelper.EnsureUniversityExistsAsync(dto.UniversityID);
+            await _exceptionHelper.EnsureSsnAvailableAsync(normalizedSsn);
+            await _exceptionHelper.EnsureEmailAvailableAsync(normalizedEmail);
 
             var student = new Student
             {
@@ -82,26 +66,20 @@ namespace UNIOOP.App.Services
 
             return await GetSingleAsync(student.StudentID);
         }
+
         public async Task UpdateAsync(int studentId, UpdateStudentDto dto)
         {
-            Student? existingStudent = await _studentRepository.GetByIdForUpdateAsync(studentId);
+            var existingStudent = await _studentRepository.GetByIdForUpdateAsync(studentId);
 
             if (existingStudent is null)
             {
-                throw new NotFoundException($"Student with ID {studentId} was not found");
+                throw _exceptionHelper.NotFound("Student", studentId);
             }
 
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (await _studentRepository.EmailExistsAsync(normalizedEmail, studentId))
-            {
-                throw new ConflictException($"Another person already uses this email {normalizedEmail}");
-            }
-
-            if (!await _universityRepository.ExistsAsync(dto.UniversityID))
-            {
-                throw new NotFoundException($"The selected university with Id {dto.UniversityID} does not exist");
-            }
+            await _exceptionHelper.EnsureEmailAvailableAsync(normalizedEmail, existingStudent.PersonnelID);
+            await _exceptionHelper.EnsureUniversityExistsAsync(dto.UniversityID);
 
             existingStudent.FName = InputNormalizationHelper.NormalizeText(dto.FName);
             existingStudent.LName = InputNormalizationHelper.NormalizeText(dto.LName);
@@ -116,20 +94,16 @@ namespace UNIOOP.App.Services
 
         public async Task DeleteAsync(int studentId)
         {
-            Student? existingStudent = await _studentRepository.GetByIdForUpdateAsync(studentId);
+            var existingStudent = await _studentRepository.GetByIdForUpdateAsync(studentId);
 
             if (existingStudent is null)
             {
-                throw new NotFoundException($"Student with ID {studentId} was not found");
+                throw _exceptionHelper.NotFound("Student", studentId);
             }
 
-            if (await _studentRepository.HasEnrollmentsAsync(studentId))
-            {
-                throw new ConflictException("The student cannot be deleted while enrolled in courses");
-            }
+            await _exceptionHelper.EnsureStudentCanBeDeletedAsync(studentId);
 
             _studentRepository.Remove(existingStudent);
-
             await _studentRepository.SaveChangesAsync();
         }
     }

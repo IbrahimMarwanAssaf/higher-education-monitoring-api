@@ -12,27 +12,28 @@ namespace UNIOOP.App.Services
     {
         private readonly IEnrollmentRepository _enrollmentRepository;
         private readonly IStudentRepository _studentRepository;
-        private readonly ICourseRepository _courseRepository;
+        private readonly ExceptionHelper _exceptionHelper;
         private readonly IMapper _mapper;
 
         public EnrollmentService(IEnrollmentRepository enrollmentRepository,
             IStudentRepository studentRepository,
-            ICourseRepository courseRepository,
+            ExceptionHelper exceptionHelper,
             IMapper mapper)
         {
             _enrollmentRepository = enrollmentRepository;
             _studentRepository = studentRepository;
-            _courseRepository = courseRepository;
+            _exceptionHelper = exceptionHelper;
             _mapper = mapper;
         }
 
         public async Task<EnrollmentResponseDto> GetSingleAsync(int studentId, int courseId)
         {
-            StudentCourse? enrollment = await _enrollmentRepository.GetSingleAsync(studentId, courseId);
+            StudentCourse? enrollment = await _enrollmentRepository
+                .GetSingleAsync(studentId, courseId);
 
             if (enrollment is null)
             {
-                throw new NotFoundException($"Enrollment for student {studentId} in course {courseId} was not found.");
+                throw new NotFoundException($"Enrollment for student {studentId} " + $"in course {courseId} was not found.");
             }
 
             return _mapper.Map<EnrollmentResponseDto>(enrollment);
@@ -40,48 +41,38 @@ namespace UNIOOP.App.Services
 
         public async Task<List<EnrollmentResponseDto>> GetStudentCoursesAsync(int studentId)
         {
-            if (!await _studentRepository.ExistsAsync(studentId))
-            {
-                throw new NotFoundException($"Student with ID {studentId} was not found.");
-            }
+            await _exceptionHelper.EnsureStudentExistsAsync(studentId);
 
-            var enrollments = await _enrollmentRepository.GetStudentCoursesAsync(studentId);
+            var enrollments = await _enrollmentRepository
+                .GetStudentCoursesAsync(studentId);
+
             return _mapper.Map<List<EnrollmentResponseDto>>(enrollments);
         }
 
         public async Task<List<EnrollmentResponseDto>> GetCourseStudentsAsync(int courseId)
         {
-            if (!await _courseRepository.ExistsAsync(courseId))
-            {
-                throw new NotFoundException($"Course with ID {courseId} was not found.");
-            }
+            await _exceptionHelper.EnsureCourseExistsAsync(courseId);
 
-            var enrollments = await _enrollmentRepository.GetCourseStudentsAsync(courseId);
+            var enrollments = await _enrollmentRepository
+                .GetCourseStudentsAsync(courseId);
+
             return _mapper.Map<List<EnrollmentResponseDto>>(enrollments);
         }
 
         public async Task<EnrollmentResponseDto> EnrollAsync(CreateEnrollmentDto dto)
         {
-            Student? student = await _studentRepository.GetByIdAsync(dto.StudentID);
+            await _exceptionHelper.EnsureStudentExistsAsync(dto.StudentID);
+            await _exceptionHelper.EnsureCourseExistsAsync(dto.CourseID);
+            await _exceptionHelper.EnsureStudentAndCourseSameUniversityAsync(
+                dto.StudentID, dto.CourseID);
+            await _exceptionHelper.EnsureEnrollmentDoesNotExistAsync(dto.StudentID, dto.CourseID);
+
+            Student? student = await _studentRepository
+                .GetByIdAsync(dto.StudentID);
 
             if (student is null)
             {
-                throw new NotFoundException($"Student with ID {dto.StudentID} was not found.");
-            }
-
-            if (!await _courseRepository.ExistsAsync(dto.CourseID))
-            {
-                throw new NotFoundException($"Course with ID {dto.CourseID} was not found.");
-            }
-
-            if (await _enrollmentRepository.ExistsAsync(dto.StudentID, dto.CourseID))
-            {
-                throw new ConflictException($"The student with id: {dto.StudentID} is already enrolled in the course with id: {dto.CourseID}");
-            }
-
-            if (!await _enrollmentRepository.StudentAndCourseSameUniversityAsync(dto.StudentID, dto.CourseID))
-            {
-                throw new BadRequestException("The student and course must belong to the same university.");
+                throw _exceptionHelper.NotFound("Student", dto.StudentID);
             }
 
             var enrollment = new StudentCourse
@@ -92,16 +83,18 @@ namespace UNIOOP.App.Services
 
             await _enrollmentRepository.AddAsync(enrollment);
             await _enrollmentRepository.SaveChangesAsync();
+
             return await GetSingleAsync(dto.StudentID, dto.CourseID);
         }
 
         public async Task UnenrollAsync(int studentId, int courseId)
         {
-            StudentCourse? enrollment = await _enrollmentRepository.GetSingleAsync(studentId, courseId);
+            StudentCourse? enrollment = await _enrollmentRepository
+                .GetSingleAsync(studentId, courseId);
 
             if (enrollment is null)
             {
-                throw new NotFoundException($"Enrollment for student {studentId} in course {courseId} was not found.");
+                throw new NotFoundException($"Enrollment for student {studentId} " + $"in course {courseId} was not found.");
             }
 
             _enrollmentRepository.Remove(enrollment);

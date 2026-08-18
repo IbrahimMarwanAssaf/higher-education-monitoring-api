@@ -1,25 +1,24 @@
-using UNIOOP.App.Dtos.GovernmentOfficers;
-using UNIOOP.App.Models;
-using UNIOOP.App.Services.Interfaces;
-using UNIOOP.App.Helpers;
-using UNIOOP.App.Repositories.Interfaces;
 using AutoMapper;
-using UNIOOP.App.Exceptions;
+using UNIOOP.App.Dtos.GovernmentOfficers;
+using UNIOOP.App.Helpers;
+using UNIOOP.App.Models;
+using UNIOOP.App.Repositories.Interfaces;
+using UNIOOP.App.Services.Interfaces;
 
 namespace UNIOOP.App.Services
 {
     public class GovernmentOfficerService : IGovernmentOfficerService
     {
         private readonly IGovernmentOfficerRepository _governmentOfficerRepository;
-        private readonly IPersonnelRepository _personnelRepository;
+        private readonly ExceptionHelper _exceptionHelper;
         private readonly IMapper _mapper;
 
         public GovernmentOfficerService(IGovernmentOfficerRepository governmentOfficerRepository,
-        IPersonnelRepository personnelRepository,
-        IMapper mapper)
+            ExceptionHelper exceptionHelper,
+            IMapper mapper)
         {
             _governmentOfficerRepository = governmentOfficerRepository;
-            _personnelRepository = personnelRepository;
+            _exceptionHelper = exceptionHelper;
             _mapper = mapper;
         }
 
@@ -31,28 +30,25 @@ namespace UNIOOP.App.Services
 
         public async Task<GovernmentOfficerResponseDto> GetSingleAsync(int governmentOfficerId)
         {
-            var governmentOfficer = await _governmentOfficerRepository.GetByIdAsync(governmentOfficerId);
+            var governmentOfficer = await _governmentOfficerRepository
+                .GetByIdAsync(governmentOfficerId);
+
             if (governmentOfficer is null)
             {
-                throw new NotFoundException($"Officer with ID {governmentOfficerId} was not found.");
+                throw _exceptionHelper.NotFound("Officer", governmentOfficerId);
             }
+
             return _mapper.Map<GovernmentOfficerResponseDto>(governmentOfficer);
         }
 
-        public async Task<GovernmentOfficerResponseDto> CreateAsync(CreateGovernmentOfficerDto dto)
+        public async Task<GovernmentOfficerResponseDto> CreateAsync(
+            CreateGovernmentOfficerDto dto)
         {
             string normalizedSsn = InputNormalizationHelper.NormalizeText(dto.SSN);
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (await _personnelRepository.SSNExistsAsync(normalizedSsn))
-            {
-                throw new ConflictException($"The SSN {normalizedSsn} is already in use");
-            }
-
-            if (await _governmentOfficerRepository.EmailExistsAsync(normalizedEmail))
-            {
-                throw new ConflictException($"The email {normalizedEmail} is already in use");
-            }
+            await _exceptionHelper.EnsureSsnAvailableAsync(normalizedSsn);
+            await _exceptionHelper.EnsureEmailAvailableAsync(normalizedEmail);
 
             var governmentOfficer = new GovernmentOfficer
             {
@@ -68,22 +64,20 @@ namespace UNIOOP.App.Services
 
             return await GetSingleAsync(governmentOfficer.OfficerID);
         }
+
         public async Task UpdateAsync(int governmentOfficerId, UpdateGovernmentOfficerDto dto)
         {
-            GovernmentOfficer? existingGovernmentOfficer =
-                await _governmentOfficerRepository.GetByIdForUpdateAsync(governmentOfficerId);
+            GovernmentOfficer? existingGovernmentOfficer = await _governmentOfficerRepository
+                .GetByIdForUpdateAsync(governmentOfficerId);
 
             if (existingGovernmentOfficer is null)
             {
-                throw new NotFoundException($"Officer with ID {governmentOfficerId} was not found");
+                throw _exceptionHelper.NotFound("Officer", governmentOfficerId);
             }
 
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (await _governmentOfficerRepository.EmailExistsAsync(normalizedEmail, governmentOfficerId))
-            {
-                throw new ConflictException($"Another person already uses this email: {normalizedEmail}");
-            }
+            await _exceptionHelper.EnsureEmailAvailableAsync(normalizedEmail, existingGovernmentOfficer.PersonnelID);
 
             existingGovernmentOfficer.FName = InputNormalizationHelper.NormalizeText(dto.FName);
             existingGovernmentOfficer.LName = InputNormalizationHelper.NormalizeText(dto.LName);
@@ -95,12 +89,12 @@ namespace UNIOOP.App.Services
 
         public async Task DeleteAsync(int governmentOfficerId)
         {
-            GovernmentOfficer? existingGovernmentOfficer =
-                await _governmentOfficerRepository.GetByIdForUpdateAsync(governmentOfficerId);
+            GovernmentOfficer? existingGovernmentOfficer = await _governmentOfficerRepository
+                .GetByIdForUpdateAsync(governmentOfficerId);
 
             if (existingGovernmentOfficer is null)
             {
-                throw new NotFoundException($"Officer with ID {governmentOfficerId} was not found");
+                throw _exceptionHelper.NotFound("Officer", governmentOfficerId);
             }
 
             _governmentOfficerRepository.Remove(existingGovernmentOfficer);

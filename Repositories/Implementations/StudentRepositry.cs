@@ -55,14 +55,6 @@ namespace UNIOOP.App.Repositories.Implementations
             return await _entityFramework.Students.AnyAsync(s => s.StudentID == studentId);
         }
 
-        public async Task<bool> EmailExistsAsync(string email, int? excludeStudentId = null)
-        {
-            return await _entityFramework.Students
-                .AnyAsync(s => s.Email == email &&
-                    (!excludeStudentId.HasValue ||
-                        s.StudentID != excludeStudentId.Value));
-        }
-
         public async Task<bool> HasEnrollmentsAsync(int studentId)
         {
             return await _entityFramework.StudentCourses.AnyAsync(sc =>

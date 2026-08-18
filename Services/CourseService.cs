@@ -1,6 +1,5 @@
 using AutoMapper;
 using UNIOOP.App.Dtos.Courses;
-using UNIOOP.App.Exceptions;
 using UNIOOP.App.Helpers;
 using UNIOOP.App.Models;
 using UNIOOP.App.Repositories.Interfaces;
@@ -12,24 +11,23 @@ namespace UNIOOP.App.Services
     {
         private readonly ICourseRepository _courseRepository;
         private readonly ITeacherRepository _teacherRepository;
-        private readonly IUniversityRepository _universityRepository;
+        private readonly ExceptionHelper _exceptionHelper;
         private readonly IMapper _mapper;
 
         public CourseService(ICourseRepository courseRepository,
             ITeacherRepository teacherRepository,
-            IUniversityRepository universityRepository,
+            ExceptionHelper exceptionHelper,
             IMapper mapper)
         {
             _courseRepository = courseRepository;
             _teacherRepository = teacherRepository;
-            _universityRepository = universityRepository;
+            _exceptionHelper = exceptionHelper;
             _mapper = mapper;
         }
 
         public async Task<List<CourseResponseDto>> GetAllAsync()
         {
             var courses = await _courseRepository.GetAllAsync();
-
             return _mapper.Map<List<CourseResponseDto>>(courses);
         }
 
@@ -39,7 +37,7 @@ namespace UNIOOP.App.Services
 
             if (course is null)
             {
-                throw new NotFoundException($"Course with ID {courseId} was not found.");
+                throw _exceptionHelper.NotFound("Course", courseId);
             }
 
             return _mapper.Map<CourseResponseDto>(course);
@@ -47,40 +45,31 @@ namespace UNIOOP.App.Services
 
         public async Task<CourseResponseDto> CreateAsync(CreateCourseDto dto)
         {
-            if (!await _universityRepository.ExistsAsync(dto.UniversityID))
-            {
-                throw new NotFoundException($"The selected university with ID {dto.UniversityID} does not exist.");
-            }
-
-            if (dto.TeacherID.HasValue)
-            {
-                if (!await _teacherRepository.ExistsAsync(dto.TeacherID.Value))
-                {
-                    throw new NotFoundException($"The selected teacher with ID {dto.TeacherID.Value} does not exist.");
-                }
-
-                if (!await _teacherRepository.BelongsToUniversityAsync(dto.TeacherID.Value, dto.UniversityID))
-                {
-                    throw new BadRequestException($"The teacher with ID {dto.TeacherID.Value} does not belong to university {dto.UniversityID}.");
-                }
-            }
-
-            string normalizedCourseName = InputNormalizationHelper.NormalizeText(dto.CourseName);
-
-            if (await _courseRepository.NameExistsAsync(normalizedCourseName, dto.UniversityID))
-            {
-                throw new ConflictException(
-                    $"The course '{normalizedCourseName}' already exists in university {dto.UniversityID}.");
-            }
+            await _exceptionHelper.EnsureUniversityExistsAsync(dto.UniversityID);
 
             long? teacherPersonnelId = null;
 
             if (dto.TeacherID.HasValue)
             {
-                Teacher teacher = await _teacherRepository.GetByIdAsync(dto.TeacherID.Value)
-                    ?? throw new NotFoundException($"The selected teacher with ID {dto.TeacherID.Value} does not exist.");
+                Teacher? teacher = await _teacherRepository.GetByIdAsync(dto.TeacherID.Value);
+
+                if (teacher is null)
+                {
+                    throw _exceptionHelper.NotFound("Teacher", dto.TeacherID.Value);
+                }
+
+                await _exceptionHelper.EnsureTeacherBelongsToUniversityAsync(
+                    dto.TeacherID.Value, dto.UniversityID);
+
                 teacherPersonnelId = teacher.PersonnelID;
             }
+
+            string normalizedCourseName = InputNormalizationHelper.NormalizeText(
+                dto.CourseName);
+
+            await _exceptionHelper.EnsureCourseNameAvailableAsync(
+                normalizedCourseName,
+                dto.UniversityID);
 
             var course = new Course
             {
@@ -98,46 +87,40 @@ namespace UNIOOP.App.Services
 
         public async Task UpdateAsync(int courseId, UpdateCourseDto dto)
         {
-            Course? existingCourse = await _courseRepository.GetByIdForUpdateAsync(courseId);
+            Course? existingCourse = await _courseRepository
+                .GetByIdForUpdateAsync(courseId);
 
             if (existingCourse is null)
             {
-                throw new NotFoundException($"Course with ID {courseId} was not found.");
+                throw _exceptionHelper.NotFound("Course", courseId);
             }
 
-            if (!await _universityRepository.ExistsAsync(dto.UniversityID))
-            {
-                throw new NotFoundException($"The selected university with ID {dto.UniversityID} does not exist.");
-            }
-
-            if (dto.TeacherID.HasValue)
-            {
-                if (!await _teacherRepository.ExistsAsync(dto.TeacherID.Value))
-                {
-                    throw new NotFoundException($"The selected teacher with ID {dto.TeacherID.Value} does not exist.");
-                }
-
-                if (!await _teacherRepository.BelongsToUniversityAsync(dto.TeacherID.Value, dto.UniversityID))
-                {
-                    throw new BadRequestException($"The teacher with ID {dto.TeacherID.Value} does not belong to university {dto.UniversityID}.");
-                }
-            }
-
-            string normalizedCourseName = InputNormalizationHelper.NormalizeText(dto.CourseName);
-
-            if (await _courseRepository.NameExistsAsync(normalizedCourseName, dto.UniversityID, courseId))
-            {
-                throw new ConflictException($"The course '{normalizedCourseName}' already exists in university {dto.UniversityID}.");
-            }
+            await _exceptionHelper.EnsureUniversityExistsAsync(
+                dto.UniversityID);
 
             long? teacherPersonnelId = null;
 
             if (dto.TeacherID.HasValue)
             {
-                Teacher teacher = await _teacherRepository.GetByIdAsync(dto.TeacherID.Value)
-                    ?? throw new NotFoundException($"The selected teacher with ID {dto.TeacherID.Value} does not exist.");
+                Teacher? teacher = await _teacherRepository.GetByIdAsync(
+                    dto.TeacherID.Value);
+
+                if (teacher is null)
+                {
+                    throw _exceptionHelper.NotFound("Teacher", dto.TeacherID.Value);
+                }
+
+                await _exceptionHelper.EnsureTeacherBelongsToUniversityAsync(
+                    dto.TeacherID.Value, dto.UniversityID);
+
                 teacherPersonnelId = teacher.PersonnelID;
             }
+
+            string normalizedCourseName = InputNormalizationHelper.NormalizeText(
+                dto.CourseName);
+
+            await _exceptionHelper.EnsureCourseNameAvailableAsync(normalizedCourseName, dto.UniversityID,
+                courseId);
 
             existingCourse.CourseName = normalizedCourseName;
             existingCourse.Credits = dto.Credits;
@@ -149,17 +132,17 @@ namespace UNIOOP.App.Services
 
         public async Task DeleteAsync(int courseId)
         {
-            Course? existingCourse = await _courseRepository.GetByIdForUpdateAsync(courseId);
+            Course? existingCourse = await _courseRepository
+                .GetByIdForUpdateAsync(courseId);
 
             if (existingCourse is null)
             {
-                throw new NotFoundException($"Course with ID {courseId} was not found.");
+                throw _exceptionHelper.NotFound(
+                    "Course",
+                    courseId);
             }
 
-            if (await _courseRepository.HasEnrollmentsAsync(courseId))
-            {
-                throw new ConflictException($"Course with ID {courseId} cannot be deleted while students are enrolled in it.");
-            }
+            await _exceptionHelper.EnsureCourseCanBeDeletedAsync(courseId);
 
             _courseRepository.Remove(existingCourse);
             await _courseRepository.SaveChangesAsync();
