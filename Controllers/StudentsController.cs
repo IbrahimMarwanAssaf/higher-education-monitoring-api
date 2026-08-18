@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.Students;
+using UNIOOP.App.Filters;
 using UNIOOP.App.Services.Interfaces;
 
 namespace UNIOOP.APP.Controllers;
@@ -42,16 +43,11 @@ public class StudentController : ControllerBase
         return NoContent();
     }
 
+    [ServiceFilter(typeof(AuditDeleteFilter))]
     [HttpDelete("Delete/{studentId}")]
     public async Task<ActionResult> Delete(int studentId)
     {
         await _studentService.DeleteAsync(studentId);
         return NoContent();
-    }
-
-    [HttpGet("Test500")]
-    public IActionResult Test500()
-    {
-        throw new Exception("This is a test exception.");
     }
 }
