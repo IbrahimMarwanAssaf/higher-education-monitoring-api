@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace UNIOOP.App.Models
 {
     public partial class Teacher : Personnel

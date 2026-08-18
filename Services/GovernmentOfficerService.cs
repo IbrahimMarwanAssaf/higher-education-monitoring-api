@@ -11,15 +11,15 @@ namespace UNIOOP.App.Services
     public class GovernmentOfficerService : IGovernmentOfficerService
     {
         private readonly IGovernmentOfficerRepository _governmentOfficerRepository;
-        private readonly IDatabaseValidationHelper _databaseValidationHelper;
+        private readonly IPersonnelRepository _personnelRepository;
         private readonly IMapper _mapper;
 
         public GovernmentOfficerService(IGovernmentOfficerRepository governmentOfficerRepository,
-        IDatabaseValidationHelper databaseValidationHelper,
+        IPersonnelRepository personnelRepository,
         IMapper mapper)
         {
             _governmentOfficerRepository = governmentOfficerRepository;
-            _databaseValidationHelper = databaseValidationHelper;
+            _personnelRepository = personnelRepository;
             _mapper = mapper;
         }
 
@@ -44,12 +44,12 @@ namespace UNIOOP.App.Services
             string normalizedSsn = InputNormalizationHelper.NormalizeText(dto.SSN);
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (await _databaseValidationHelper.SSNExistsAsync(normalizedSsn))
+            if (await _personnelRepository.SSNExistsAsync(normalizedSsn))
             {
                 throw new ConflictException($"The SSN {normalizedSsn} is already in use");
             }
 
-            if (await _databaseValidationHelper.GovernmentOfficerEmailExistsAsync(normalizedEmail))
+            if (await _governmentOfficerRepository.EmailExistsAsync(normalizedEmail))
             {
                 throw new ConflictException($"The email {normalizedEmail} is already in use");
             }
@@ -80,7 +80,7 @@ namespace UNIOOP.App.Services
 
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (await _databaseValidationHelper.GovernmentOfficerEmailExistsAsync(normalizedEmail, governmentOfficerId))
+            if (await _governmentOfficerRepository.EmailExistsAsync(normalizedEmail, governmentOfficerId))
             {
                 throw new ConflictException($"Another person already uses this email: {normalizedEmail}");
             }

@@ -12,17 +12,17 @@ namespace UNIOOP.App.Services
     {
         private readonly ICourseRepository _courseRepository;
         private readonly ITeacherRepository _teacherRepository;
-        private readonly IDatabaseValidationHelper _databaseValidationHelper;
+        private readonly IUniversityRepository _universityRepository;
         private readonly IMapper _mapper;
 
         public CourseService(ICourseRepository courseRepository,
             ITeacherRepository teacherRepository,
-            IDatabaseValidationHelper databaseValidationHelper,
+            IUniversityRepository universityRepository,
             IMapper mapper)
         {
             _courseRepository = courseRepository;
             _teacherRepository = teacherRepository;
-            _databaseValidationHelper = databaseValidationHelper;
+            _universityRepository = universityRepository;
             _mapper = mapper;
         }
 
@@ -47,19 +47,19 @@ namespace UNIOOP.App.Services
 
         public async Task<CourseResponseDto> CreateAsync(CreateCourseDto dto)
         {
-            if (!await _databaseValidationHelper.UniversityExistsAsync(dto.UniversityID))
+            if (!await _universityRepository.ExistsAsync(dto.UniversityID))
             {
                 throw new NotFoundException($"The selected university with ID {dto.UniversityID} does not exist.");
             }
 
             if (dto.TeacherID.HasValue)
             {
-                if (!await _databaseValidationHelper.TeacherExistsAsync(dto.TeacherID.Value))
+                if (!await _teacherRepository.ExistsAsync(dto.TeacherID.Value))
                 {
                     throw new NotFoundException($"The selected teacher with ID {dto.TeacherID.Value} does not exist.");
                 }
 
-                if (!await _databaseValidationHelper.TeacherBelongsToUniversityAsync(dto.TeacherID.Value, dto.UniversityID))
+                if (!await _teacherRepository.BelongsToUniversityAsync(dto.TeacherID.Value, dto.UniversityID))
                 {
                     throw new BadRequestException($"The teacher with ID {dto.TeacherID.Value} does not belong to university {dto.UniversityID}.");
                 }
@@ -67,7 +67,7 @@ namespace UNIOOP.App.Services
 
             string normalizedCourseName = InputNormalizationHelper.NormalizeText(dto.CourseName);
 
-            if (await _databaseValidationHelper.CourseNameExistsAsync(normalizedCourseName, dto.UniversityID))
+            if (await _courseRepository.NameExistsAsync(normalizedCourseName, dto.UniversityID))
             {
                 throw new ConflictException(
                     $"The course '{normalizedCourseName}' already exists in university {dto.UniversityID}.");
@@ -105,19 +105,19 @@ namespace UNIOOP.App.Services
                 throw new NotFoundException($"Course with ID {courseId} was not found.");
             }
 
-            if (!await _databaseValidationHelper.UniversityExistsAsync(dto.UniversityID))
+            if (!await _universityRepository.ExistsAsync(dto.UniversityID))
             {
                 throw new NotFoundException($"The selected university with ID {dto.UniversityID} does not exist.");
             }
 
             if (dto.TeacherID.HasValue)
             {
-                if (!await _databaseValidationHelper.TeacherExistsAsync(dto.TeacherID.Value))
+                if (!await _teacherRepository.ExistsAsync(dto.TeacherID.Value))
                 {
                     throw new NotFoundException($"The selected teacher with ID {dto.TeacherID.Value} does not exist.");
                 }
 
-                if (!await _databaseValidationHelper.TeacherBelongsToUniversityAsync(dto.TeacherID.Value, dto.UniversityID))
+                if (!await _teacherRepository.BelongsToUniversityAsync(dto.TeacherID.Value, dto.UniversityID))
                 {
                     throw new BadRequestException($"The teacher with ID {dto.TeacherID.Value} does not belong to university {dto.UniversityID}.");
                 }
@@ -125,7 +125,7 @@ namespace UNIOOP.App.Services
 
             string normalizedCourseName = InputNormalizationHelper.NormalizeText(dto.CourseName);
 
-            if (await _databaseValidationHelper.CourseNameExistsAsync(normalizedCourseName, dto.UniversityID, courseId))
+            if (await _courseRepository.NameExistsAsync(normalizedCourseName, dto.UniversityID, courseId))
             {
                 throw new ConflictException($"The course '{normalizedCourseName}' already exists in university {dto.UniversityID}.");
             }
@@ -156,7 +156,7 @@ namespace UNIOOP.App.Services
                 throw new NotFoundException($"Course with ID {courseId} was not found.");
             }
 
-            if (await _databaseValidationHelper.CourseHasEnrollmentsAsync(courseId))
+            if (await _courseRepository.HasEnrollmentsAsync(courseId))
             {
                 throw new ConflictException($"Course with ID {courseId} cannot be deleted while students are enrolled in it.");
             }

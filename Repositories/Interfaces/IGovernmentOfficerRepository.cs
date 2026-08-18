@@ -10,5 +10,7 @@ namespace UNIOOP.App.Repositories.Interfaces
         Task AddAsync(GovernmentOfficer governmentOfficer);
         void Remove(GovernmentOfficer governmentOfficer);
         Task SaveChangesAsync();
+        Task<bool> ExistsAsync(int governmentOfficerId);
+        Task<bool> EmailExistsAsync(string email, int? excludeGovernmentOfficerId = null);
     }
 }

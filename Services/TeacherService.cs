@@ -11,15 +11,18 @@ namespace UNIOOP.App.Services
     public class TeacherService : ITeacherService
     {
         private readonly ITeacherRepository _teacherRepository;
-        private readonly IDatabaseValidationHelper _databaseValidationHelper;
+        private readonly IPersonnelRepository _personnelRepository;
+        private readonly IUniversityRepository _universityRepository;
         private readonly IMapper _mapper;
 
         public TeacherService(ITeacherRepository teacherRepository,
-        IDatabaseValidationHelper databaseValidationHelper,
+        IPersonnelRepository personnelRepository,
+        IUniversityRepository universityRepository,
         IMapper mapper)
         {
             _teacherRepository = teacherRepository;
-            _databaseValidationHelper = databaseValidationHelper;
+            _personnelRepository = personnelRepository;
+            _universityRepository = universityRepository;
             _mapper = mapper;
         }
 
@@ -45,17 +48,17 @@ namespace UNIOOP.App.Services
             string normalizedSsn = InputNormalizationHelper.NormalizeText(dto.SSN);
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (!await _databaseValidationHelper.UniversityExistsAsync(dto.UniversityID))
+            if (!await _universityRepository.ExistsAsync(dto.UniversityID))
             {
                 throw new NotFoundException($"The selected university with Id {dto.UniversityID} does not exist");
             }
 
-            if (await _databaseValidationHelper.SSNExistsAsync(normalizedSsn))
+            if (await _personnelRepository.SSNExistsAsync(normalizedSsn))
             {
                 throw new ConflictException($"The SSN {normalizedSsn} is already in use");
             }
 
-            if (await _databaseValidationHelper.TeacherEmailExistsAsync(normalizedEmail))
+            if (await _teacherRepository.EmailExistsAsync(normalizedEmail))
             {
                 throw new ConflictException($"The email {normalizedEmail} is already in use");
             }
@@ -90,12 +93,12 @@ namespace UNIOOP.App.Services
 
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (await _databaseValidationHelper.TeacherEmailExistsAsync(normalizedEmail, teacherId))
+            if (await _teacherRepository.EmailExistsAsync(normalizedEmail, teacherId))
             {
                 throw new ConflictException($"Another person already uses this email {normalizedEmail}");
             }
 
-            if (!await _databaseValidationHelper.UniversityExistsAsync(dto.UniversityID))
+            if (!await _universityRepository.ExistsAsync(dto.UniversityID))
             {
                 throw new NotFoundException($"The selected university with Id {dto.UniversityID} does not exist");
             }
