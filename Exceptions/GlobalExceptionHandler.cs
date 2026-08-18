@@ -57,16 +57,17 @@ namespace UNIOOP.App.Exceptions
 
             httpContext.Response.StatusCode = statusCode;
 
-            await httpContext.Response.WriteAsJsonAsync(
-                new ProblemDetails
+            return await _problemDetailsService.TryWriteAsync(
+                new ProblemDetailsContext
                 {
-                    Status = statusCode,
-                    Title = title,
-                    Detail = detail
-                },
-                cancellationToken);
-
-            return true;
+                    HttpContext = httpContext,
+                    ProblemDetails = new ProblemDetails
+                    {
+                        Status = statusCode,
+                        Title = title,
+                        Detail = detail
+                    }
+                });
         }
     }
 }

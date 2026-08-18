@@ -48,4 +48,10 @@ public class StudentController : ControllerBase
         await _studentService.DeleteAsync(studentId);
         return NoContent();
     }
+
+    [HttpGet("Test500")]
+    public IActionResult Test500()
+    {
+        throw new Exception("This is a test exception.");
+    }
 }

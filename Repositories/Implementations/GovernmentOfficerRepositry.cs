@@ -52,14 +52,5 @@ namespace UNIOOP.App.Repositories.Implementations
             return await _entityFramework.GovernmentOfficers
                 .AnyAsync(go => go.OfficerID == governmentOfficerId);
         }
-
-        public async Task<bool> EmailExistsAsync(string email, int? excludeGovernmentOfficerId = null)
-        {
-            return await _entityFramework.GovernmentOfficers
-                .AnyAsync(go =>
-                    go.Email == email &&
-                    (!excludeGovernmentOfficerId.HasValue ||
-                     go.OfficerID != excludeGovernmentOfficerId.Value));
-        }
     }
 }

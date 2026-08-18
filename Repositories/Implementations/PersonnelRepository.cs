@@ -18,5 +18,14 @@ namespace UNIOOP.App.Repositories.Implementations
             return await _entityFramework.Personnels
                 .AnyAsync(p => p.SSN == ssn);
         }
+
+        public async Task<bool> EmailExistsAsync(string email, long? excludePersonnelId = null)
+        {
+            return await _entityFramework.Personnels
+                .AnyAsync(p =>
+                    EF.Functions.ILike(p.Email, email) &&
+                    (!excludePersonnelId.HasValue ||
+                     p.PersonnelID != excludePersonnelId.Value));
+        }
     }
 }

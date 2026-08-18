@@ -49,7 +49,7 @@ namespace UNIOOP.App.Services
                 throw new ConflictException($"The SSN {normalizedSsn} is already in use");
             }
 
-            if (await _governmentOfficerRepository.EmailExistsAsync(normalizedEmail))
+            if (await _personnelRepository.EmailExistsAsync(normalizedEmail))
             {
                 throw new ConflictException($"The email {normalizedEmail} is already in use");
             }
@@ -70,8 +70,8 @@ namespace UNIOOP.App.Services
         }
         public async Task UpdateAsync(int governmentOfficerId, UpdateGovernmentOfficerDto dto)
         {
-            GovernmentOfficer? existingGovernmentOfficer =
-                await _governmentOfficerRepository.GetByIdForUpdateAsync(governmentOfficerId);
+            GovernmentOfficer? existingGovernmentOfficer = await _governmentOfficerRepository
+                .GetByIdForUpdateAsync(governmentOfficerId);
 
             if (existingGovernmentOfficer is null)
             {
@@ -80,7 +80,7 @@ namespace UNIOOP.App.Services
 
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (await _governmentOfficerRepository.EmailExistsAsync(normalizedEmail, governmentOfficerId))
+            if (await _personnelRepository.EmailExistsAsync(normalizedEmail, existingGovernmentOfficer.PersonnelID))
             {
                 throw new ConflictException($"Another person already uses this email: {normalizedEmail}");
             }

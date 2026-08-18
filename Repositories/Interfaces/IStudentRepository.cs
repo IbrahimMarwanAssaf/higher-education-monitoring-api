@@ -11,7 +11,6 @@ namespace UNIOOP.App.Repositories.Interfaces
         void Remove(Student student);
         Task SaveChangesAsync();
         Task<bool> ExistsAsync(int studentId);
-        Task<bool> EmailExistsAsync(string email, int? excludeStudentId = null);
         Task<bool> HasEnrollmentsAsync(int studentId);
     }
 }

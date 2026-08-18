@@ -58,11 +58,10 @@ namespace UNIOOP.App.Services
                 throw new ConflictException($"The SSN {normalizedSsn} is already in use");
             }
 
-            if (await _teacherRepository.EmailExistsAsync(normalizedEmail))
+            if (await _personnelRepository.EmailExistsAsync(normalizedEmail))
             {
                 throw new ConflictException($"The email {normalizedEmail} is already in use");
             }
-
 
             var teacher = new Teacher
             {
@@ -93,7 +92,7 @@ namespace UNIOOP.App.Services
 
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
-            if (await _teacherRepository.EmailExistsAsync(normalizedEmail, teacherId))
+            if (await _personnelRepository.EmailExistsAsync(normalizedEmail, existingTeacher.PersonnelID))
             {
                 throw new ConflictException($"Another person already uses this email {normalizedEmail}");
             }
