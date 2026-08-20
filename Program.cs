@@ -10,6 +10,7 @@ using UNIOOP.App.Repositories.Interfaces;
 using UNIOOP.App.Services;
 using UNIOOP.App.Services.Interfaces;
 using UNIOOP.App.Filters;
+using UNIOOP.App.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,6 +76,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var app = builder.Build();
 app.UseExceptionHandler();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
