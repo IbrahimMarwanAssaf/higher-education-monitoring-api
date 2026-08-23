@@ -1,4 +1,5 @@
 using AutoMapper;
+using UNIOOP.App.Caching;
 using UNIOOP.App.Dtos.GovernmentOfficers;
 using UNIOOP.App.Helpers;
 using UNIOOP.App.Models;
@@ -12,33 +13,64 @@ namespace UNIOOP.App.Services
         private readonly IGovernmentOfficerRepository _governmentOfficerRepository;
         private readonly ExceptionHelper _exceptionHelper;
         private readonly IMapper _mapper;
+        private readonly IInMemoryCacheService _cacheService;
 
         public GovernmentOfficerService(IGovernmentOfficerRepository governmentOfficerRepository,
             ExceptionHelper exceptionHelper,
+            IInMemoryCacheService cacheService,
             IMapper mapper)
         {
             _governmentOfficerRepository = governmentOfficerRepository;
             _exceptionHelper = exceptionHelper;
             _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         public async Task<List<GovernmentOfficerResponseDto>> GetAllAsync()
         {
-            var governmentOfficers = await _governmentOfficerRepository.GetAllAsync();
-            return _mapper.Map<List<GovernmentOfficerResponseDto>>(governmentOfficers);
+            const string cacheKey = "GovernmentOfficers:All";
+
+            List<GovernmentOfficerResponseDto>? governmentOfficers = await _cacheService
+                .GetOrCreateAsync(cacheKey, async () =>
+                    {
+                        var officerEntities = await _governmentOfficerRepository.GetAllAsync();
+                        return _mapper.Map<List<GovernmentOfficerResponseDto>>(officerEntities);
+                    });
+
+            if (governmentOfficers != null)
+            {
+                return governmentOfficers;
+            }
+            else
+            {
+                return new List<GovernmentOfficerResponseDto>();
+            }
         }
 
         public async Task<GovernmentOfficerResponseDto> GetSingleAsync(int governmentOfficerId)
         {
-            var governmentOfficer = await _governmentOfficerRepository
-                .GetByIdAsync(governmentOfficerId);
+            string cacheKey = $"GovernmentOfficer:{governmentOfficerId}";
+
+            GovernmentOfficerResponseDto? governmentOfficer = await _cacheService
+                .GetOrCreateAsync(cacheKey, async () =>
+                    {
+                        GovernmentOfficer? officerEntity = await _governmentOfficerRepository
+                            .GetByIdAsync(governmentOfficerId);
+
+                        if (officerEntity is null)
+                        {
+                            return null;
+                        }
+
+                        return _mapper.Map<GovernmentOfficerResponseDto>(officerEntity);
+                    });
 
             if (governmentOfficer is null)
             {
                 throw _exceptionHelper.NotFound("Officer", governmentOfficerId);
             }
 
-            return _mapper.Map<GovernmentOfficerResponseDto>(governmentOfficer);
+            return governmentOfficer;
         }
 
         public async Task<GovernmentOfficerResponseDto> CreateAsync(
@@ -61,6 +93,8 @@ namespace UNIOOP.App.Services
 
             await _governmentOfficerRepository.AddAsync(governmentOfficer);
             await _governmentOfficerRepository.SaveChangesAsync();
+
+            await _cacheService.RemoveAsync("GovernmentOfficers:All");
 
             return await GetSingleAsync(governmentOfficer.OfficerID);
         }
@@ -85,6 +119,9 @@ namespace UNIOOP.App.Services
             existingGovernmentOfficer.DateOfBirth = dto.DateOfBirth;
 
             await _governmentOfficerRepository.SaveChangesAsync();
+
+            await _cacheService.RemoveAsync($"GovernmentOfficer:{governmentOfficerId}");
+            await _cacheService.RemoveAsync("GovernmentOfficers:All");
         }
 
         public async Task DeleteAsync(int governmentOfficerId)
@@ -100,6 +137,9 @@ namespace UNIOOP.App.Services
             _governmentOfficerRepository.Remove(existingGovernmentOfficer);
 
             await _governmentOfficerRepository.SaveChangesAsync();
+
+            await _cacheService.RemoveAsync($"GovernmentOfficer:{governmentOfficerId}");
+            await _cacheService.RemoveAsync("GovernmentOfficers:All");
         }
     }
 }

@@ -1,4 +1,5 @@
 using AutoMapper;
+using UNIOOP.App.Caching;
 using UNIOOP.App.Dtos.Students;
 using UNIOOP.App.Helpers;
 using UNIOOP.App.Models;
@@ -12,32 +13,64 @@ namespace UNIOOP.App.Services
         private readonly IStudentRepository _studentRepository;
         private readonly ExceptionHelper _exceptionHelper;
         private readonly IMapper _mapper;
+        private readonly IInMemoryCacheService _cacheService;
 
         public StudentService(IStudentRepository studentRepository,
             ExceptionHelper exceptionHelper,
-            IMapper mapper)
+            IMapper mapper,
+            IInMemoryCacheService cacheService)
         {
             _studentRepository = studentRepository;
             _exceptionHelper = exceptionHelper;
             _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         public async Task<List<StudentResponseDto>> GetAllAsync()
         {
-            var students = await _studentRepository.GetAllAsync();
-            return _mapper.Map<List<StudentResponseDto>>(students);
+            const string cacheKey = "Students:All";
+
+            List<StudentResponseDto>? students = await _cacheService
+                .GetOrCreateAsync(cacheKey, async () =>
+                    {
+                        var studentEntities = await _studentRepository.GetAllAsync();
+                        return _mapper.Map<List<StudentResponseDto>>(studentEntities);
+                    });
+
+            if (students != null)
+            {
+                return students;
+            }
+            else
+            {
+                return new List<StudentResponseDto>();
+            }
         }
 
         public async Task<StudentResponseDto> GetSingleAsync(int studentId)
         {
-            var student = await _studentRepository.GetByIdAsync(studentId);
+            string cacheKey = $"Student:{studentId}";
+
+            StudentResponseDto? student = await _cacheService
+                .GetOrCreateAsync(cacheKey, async () =>
+                    {
+                        Student? studentEntity = await _studentRepository
+                            .GetByIdAsync(studentId);
+
+                        if (studentEntity is null)
+                        {
+                            return null;
+                        }
+
+                        return _mapper.Map<StudentResponseDto>(studentEntity);
+                    });
 
             if (student is null)
             {
                 throw _exceptionHelper.NotFound("Student", studentId);
             }
 
-            return _mapper.Map<StudentResponseDto>(student);
+            return student;
         }
 
         public async Task<StudentResponseDto> CreateAsync(CreateStudentDto dto)
@@ -63,6 +96,8 @@ namespace UNIOOP.App.Services
 
             await _studentRepository.AddAsync(student);
             await _studentRepository.SaveChangesAsync();
+
+            await _cacheService.RemoveAsync("Students:All");
 
             return await GetSingleAsync(student.StudentID);
         }
@@ -90,6 +125,9 @@ namespace UNIOOP.App.Services
             existingStudent.UniversityID = dto.UniversityID;
 
             await _studentRepository.SaveChangesAsync();
+
+            await _cacheService.RemoveAsync($"Student:{studentId}");
+            await _cacheService.RemoveAsync("Students:All");
         }
 
         public async Task DeleteAsync(int studentId)
@@ -105,6 +143,9 @@ namespace UNIOOP.App.Services
 
             _studentRepository.Remove(existingStudent);
             await _studentRepository.SaveChangesAsync();
+
+            await _cacheService.RemoveAsync($"Student:{studentId}");
+            await _cacheService.RemoveAsync("Students:All");
         }
     }
 }

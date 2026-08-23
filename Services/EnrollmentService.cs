@@ -1,4 +1,5 @@
 using AutoMapper;
+using UNIOOP.App.Caching;
 using UNIOOP.App.Dtos.Enrollments;
 using UNIOOP.App.Exceptions;
 using UNIOOP.App.Helpers;
@@ -14,49 +15,94 @@ namespace UNIOOP.App.Services
         private readonly IStudentRepository _studentRepository;
         private readonly ExceptionHelper _exceptionHelper;
         private readonly IMapper _mapper;
+        private readonly IInMemoryCacheService _cacheService;
 
         public EnrollmentService(IEnrollmentRepository enrollmentRepository,
             IStudentRepository studentRepository,
             ExceptionHelper exceptionHelper,
+            IInMemoryCacheService cacheService,
             IMapper mapper)
         {
             _enrollmentRepository = enrollmentRepository;
             _studentRepository = studentRepository;
             _exceptionHelper = exceptionHelper;
             _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         public async Task<EnrollmentResponseDto> GetSingleAsync(int studentId, int courseId)
         {
-            StudentCourse? enrollment = await _enrollmentRepository
-                .GetSingleAsync(studentId, courseId);
+            string cacheKey = $"Enrollment:{studentId}:{courseId}";
+
+            EnrollmentResponseDto? enrollment = await _cacheService.GetOrCreateAsync(cacheKey, async () =>
+                {
+                    StudentCourse? enrollmentEntity = await _enrollmentRepository
+                        .GetSingleAsync(studentId, courseId);
+
+                    if (enrollmentEntity is null)
+                    {
+                        return null;
+                    }
+
+                    return _mapper.Map<EnrollmentResponseDto>(enrollmentEntity);
+                });
 
             if (enrollment is null)
             {
                 throw new NotFoundException($"Enrollment for student {studentId} " + $"in course {courseId} was not found.");
             }
 
-            return _mapper.Map<EnrollmentResponseDto>(enrollment);
+            return enrollment;
         }
 
         public async Task<List<EnrollmentResponseDto>> GetStudentCoursesAsync(int studentId)
         {
-            await _exceptionHelper.EnsureStudentExistsAsync(studentId);
+            string cacheKey = $"StudentCourses:{studentId}";
 
-            var enrollments = await _enrollmentRepository
-                .GetStudentCoursesAsync(studentId);
+            List<EnrollmentResponseDto>? enrollments = await _cacheService
+                .GetOrCreateAsync(cacheKey, async () =>
+                    {
+                        await _exceptionHelper.EnsureStudentExistsAsync(studentId);
 
-            return _mapper.Map<List<EnrollmentResponseDto>>(enrollments);
+                        var enrollmentEntities = await _enrollmentRepository
+                            .GetStudentCoursesAsync(studentId);
+
+                        return _mapper.Map<List<EnrollmentResponseDto>>(enrollmentEntities);
+                    });
+
+            if (enrollments != null)
+            {
+                return enrollments;
+            }
+            else
+            {
+                return new List<EnrollmentResponseDto>();
+            }
         }
 
         public async Task<List<EnrollmentResponseDto>> GetCourseStudentsAsync(int courseId)
         {
-            await _exceptionHelper.EnsureCourseExistsAsync(courseId);
+            string cacheKey = $"CourseStudents:{courseId}";
 
-            var enrollments = await _enrollmentRepository
-                .GetCourseStudentsAsync(courseId);
+            List<EnrollmentResponseDto>? enrollments = await _cacheService
+                .GetOrCreateAsync(cacheKey, async () =>
+                    {
+                        await _exceptionHelper.EnsureCourseExistsAsync(courseId);
 
-            return _mapper.Map<List<EnrollmentResponseDto>>(enrollments);
+                        var enrollmentEntities = await _enrollmentRepository
+                            .GetCourseStudentsAsync(courseId);
+
+                        return _mapper.Map<List<EnrollmentResponseDto>>(enrollmentEntities);
+                    });
+
+            if (enrollments != null)
+            {
+                return enrollments;
+            }
+            else
+            {
+                return new List<EnrollmentResponseDto>();
+            }
         }
 
         public async Task<EnrollmentResponseDto> EnrollAsync(CreateEnrollmentDto dto)
@@ -84,6 +130,10 @@ namespace UNIOOP.App.Services
             await _enrollmentRepository.AddAsync(enrollment);
             await _enrollmentRepository.SaveChangesAsync();
 
+            await _cacheService.RemoveAsync($"Enrollment:{dto.StudentID}:{dto.CourseID}");
+            await _cacheService.RemoveAsync($"StudentCourses:{dto.StudentID}");
+            await _cacheService.RemoveAsync($"CourseStudents:{dto.CourseID}");
+
             return await GetSingleAsync(dto.StudentID, dto.CourseID);
         }
 
@@ -99,6 +149,10 @@ namespace UNIOOP.App.Services
 
             _enrollmentRepository.Remove(enrollment);
             await _enrollmentRepository.SaveChangesAsync();
+
+            await _cacheService.RemoveAsync($"Enrollment:{studentId}:{courseId}");
+            await _cacheService.RemoveAsync($"StudentCourses:{studentId}");
+            await _cacheService.RemoveAsync($"CourseStudents:{courseId}");
         }
     }
 }

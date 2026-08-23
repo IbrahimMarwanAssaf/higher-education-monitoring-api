@@ -1,6 +1,3 @@
-using System.Data;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
-
 namespace UNIOOP.App.Middleware
 {
     public class RequestLoggingMiddleware
