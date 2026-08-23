@@ -1,4 +1,5 @@
 using AutoMapper;
+using UNIOOP.App.Caching;
 using UNIOOP.App.Dtos.Courses;
 using UNIOOP.App.Helpers;
 using UNIOOP.App.Models;
@@ -13,34 +14,66 @@ namespace UNIOOP.App.Services
         private readonly ITeacherRepository _teacherRepository;
         private readonly ExceptionHelper _exceptionHelper;
         private readonly IMapper _mapper;
+        private readonly IInMemoryCacheService _cacheService;
 
         public CourseService(ICourseRepository courseRepository,
             ITeacherRepository teacherRepository,
             ExceptionHelper exceptionHelper,
-            IMapper mapper)
+            IMapper mapper,
+            IInMemoryCacheService cacheService)
         {
             _courseRepository = courseRepository;
             _teacherRepository = teacherRepository;
             _exceptionHelper = exceptionHelper;
             _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         public async Task<List<CourseResponseDto>> GetAllAsync()
         {
-            var courses = await _courseRepository.GetAllAsync();
-            return _mapper.Map<List<CourseResponseDto>>(courses);
+            const string cacheKey = "Courses:All";
+
+            List<CourseResponseDto>? courses = await _cacheService
+                .GetOrCreateAsync(cacheKey, async () =>
+                    {
+                        var courseEntities = await _courseRepository.GetAllAsync();
+                        return _mapper.Map<List<CourseResponseDto>>(courseEntities);
+                    });
+
+            if (courses != null)
+            {
+                return courses;
+            }
+            else
+            {
+                return new List<CourseResponseDto>();
+            }
         }
 
         public async Task<CourseResponseDto> GetSingleAsync(int courseId)
         {
-            var course = await _courseRepository.GetByIdAsync(courseId);
+            string cacheKey = $"Course:{courseId}";
+
+            CourseResponseDto? course = await _cacheService
+                .GetOrCreateAsync(cacheKey, async () =>
+                    {
+                        Course? courseEntity = await _courseRepository
+                            .GetByIdAsync(courseId);
+
+                        if (courseEntity is null)
+                        {
+                            return null;
+                        }
+
+                        return _mapper.Map<CourseResponseDto>(courseEntity);
+                    });
 
             if (course is null)
             {
                 throw _exceptionHelper.NotFound("Course", courseId);
             }
 
-            return _mapper.Map<CourseResponseDto>(course);
+            return course;
         }
 
         public async Task<CourseResponseDto> CreateAsync(CreateCourseDto dto)
@@ -68,8 +101,7 @@ namespace UNIOOP.App.Services
                 dto.CourseName);
 
             await _exceptionHelper.EnsureCourseNameAvailableAsync(
-                normalizedCourseName,
-                dto.UniversityID);
+                normalizedCourseName, dto.UniversityID);
 
             var course = new Course
             {
@@ -81,6 +113,8 @@ namespace UNIOOP.App.Services
 
             await _courseRepository.AddAsync(course);
             await _courseRepository.SaveChangesAsync();
+
+            _cacheService.Remove("Courses:All");
 
             return await GetSingleAsync(course.CourseID);
         }
@@ -95,8 +129,7 @@ namespace UNIOOP.App.Services
                 throw _exceptionHelper.NotFound("Course", courseId);
             }
 
-            await _exceptionHelper.EnsureUniversityExistsAsync(
-                dto.UniversityID);
+            await _exceptionHelper.EnsureUniversityExistsAsync(dto.UniversityID);
 
             long? teacherPersonnelId = null;
 
@@ -116,11 +149,10 @@ namespace UNIOOP.App.Services
                 teacherPersonnelId = teacher.PersonnelID;
             }
 
-            string normalizedCourseName = InputNormalizationHelper.NormalizeText(
-                dto.CourseName);
+            string normalizedCourseName = InputNormalizationHelper.NormalizeText(dto.CourseName);
 
-            await _exceptionHelper.EnsureCourseNameAvailableAsync(normalizedCourseName, dto.UniversityID,
-                courseId);
+            await _exceptionHelper.EnsureCourseNameAvailableAsync(normalizedCourseName,
+            dto.UniversityID, courseId);
 
             existingCourse.CourseName = normalizedCourseName;
             existingCourse.Credits = dto.Credits;
@@ -128,6 +160,9 @@ namespace UNIOOP.App.Services
             existingCourse.TeacherPersonnelID = teacherPersonnelId;
 
             await _courseRepository.SaveChangesAsync();
+
+            _cacheService.Remove($"Course:{courseId}");
+            _cacheService.Remove("Courses:All");
         }
 
         public async Task DeleteAsync(int courseId)
@@ -146,6 +181,9 @@ namespace UNIOOP.App.Services
 
             _courseRepository.Remove(existingCourse);
             await _courseRepository.SaveChangesAsync();
+
+            _cacheService.Remove($"Course:{courseId}");
+            _cacheService.Remove("Courses:All");
         }
     }
 }

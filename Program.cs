@@ -11,6 +11,7 @@ using UNIOOP.App.Services;
 using UNIOOP.App.Services.Interfaces;
 using UNIOOP.App.Filters;
 using UNIOOP.App.Middleware;
+using UNIOOP.App.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,7 +63,6 @@ builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 
 builder.Services.AddScoped<ExceptionHelper>();
-builder.Services.AddScoped<ExecutionTimeFilter>();
 builder.Services.AddScoped<AuditDeleteFilter>();
 
 builder.Host.UseDefaultServiceProvider(options =>
@@ -70,6 +70,9 @@ builder.Host.UseDefaultServiceProvider(options =>
     options.ValidateScopes = true;
     options.ValidateOnBuild = true;
 });
+
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<IInMemoryCacheService, InMemoryCacheService>();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

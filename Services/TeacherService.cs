@@ -1,4 +1,5 @@
 using AutoMapper;
+using UNIOOP.App.Caching;
 using UNIOOP.App.Dtos.Teachers;
 using UNIOOP.App.Helpers;
 using UNIOOP.App.Models;
@@ -12,36 +13,64 @@ namespace UNIOOP.App.Services
         private readonly ITeacherRepository _teacherRepository;
         private readonly ExceptionHelper _exceptionHelper;
         private readonly IMapper _mapper;
+        private readonly IInMemoryCacheService _cacheService;
 
         public TeacherService(ITeacherRepository teacherRepository,
             ExceptionHelper exceptionHelper,
+            IInMemoryCacheService cacheService,
             IMapper mapper)
         {
             _teacherRepository = teacherRepository;
             _exceptionHelper = exceptionHelper;
             _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         public async Task<List<TeacherResponseDto>> GetAllAsync()
         {
-            var teachers = await _teacherRepository.GetAllAsync();
-            return _mapper.Map<List<TeacherResponseDto>>(teachers);
+            const string cacheKey = "Teachers:All";
+
+            List<TeacherResponseDto>? teachers = await _cacheService
+                .GetOrCreateAsync(cacheKey, async () =>
+                    {
+                        var teacherEntities = await _teacherRepository.GetAllAsync();
+                        return _mapper.Map<List<TeacherResponseDto>>(teacherEntities);
+                    });
+
+            if (teachers != null)
+            {
+                return teachers;
+            }
+            else
+            {
+                return new List<TeacherResponseDto>();
+            }
         }
 
         public async Task<TeacherResponseDto> GetSingleAsync(int teacherId)
         {
-            var teacher = await _teacherRepository.GetByIdAsync(teacherId);
+            string cacheKey = $"Teacher:{teacherId}";
+
+            TeacherResponseDto? teacher = await _cacheService
+                .GetOrCreateAsync(cacheKey, async () =>
+                    {
+                        Teacher? teacherEntity = await _teacherRepository.GetByIdAsync(teacherId);
+
+                        if (teacherEntity is null)
+                        {
+                            return null;
+                        }
+
+                        return _mapper.Map<TeacherResponseDto>(teacherEntity);
+                    });
 
             if (teacher is null)
             {
-                throw _exceptionHelper.NotFound(
-                    "Teacher",
-                    teacherId);
+                throw _exceptionHelper.NotFound("Teacher", teacherId);
             }
 
-            return _mapper.Map<TeacherResponseDto>(teacher);
+            return teacher;
         }
-
         public async Task<TeacherResponseDto> CreateAsync(CreateTeacherDto dto)
         {
             string normalizedSsn = InputNormalizationHelper.NormalizeText(dto.SSN);
@@ -68,13 +97,14 @@ namespace UNIOOP.App.Services
             await _teacherRepository.AddAsync(teacher);
             await _teacherRepository.SaveChangesAsync();
 
+            _cacheService.Remove("Teachers:All");
+
             return await GetSingleAsync(teacher.TeacherID);
         }
 
         public async Task UpdateAsync(int teacherId, UpdateTeacherDto dto)
         {
-            Teacher? existingTeacher =
-                await _teacherRepository.GetByIdForUpdateAsync(teacherId);
+            Teacher? existingTeacher = await _teacherRepository.GetByIdForUpdateAsync(teacherId);
 
             if (existingTeacher is null)
             {
@@ -96,12 +126,14 @@ namespace UNIOOP.App.Services
             existingTeacher.MinistryDegreeID = dto.MinistryDegreeID;
 
             await _teacherRepository.SaveChangesAsync();
+
+            _cacheService.Remove($"Teacher:{teacherId}");
+            _cacheService.Remove("Teachers:All");
         }
 
         public async Task DeleteAsync(int teacherId)
         {
-            Teacher? existingTeacher =
-                await _teacherRepository.GetByIdForUpdateAsync(teacherId);
+            Teacher? existingTeacher = await _teacherRepository.GetByIdForUpdateAsync(teacherId);
 
             if (existingTeacher is null)
             {
@@ -110,6 +142,9 @@ namespace UNIOOP.App.Services
 
             _teacherRepository.Remove(existingTeacher);
             await _teacherRepository.SaveChangesAsync();
+
+            _cacheService.Remove($"Teacher:{teacherId}");
+            _cacheService.Remove("Teachers:All");
         }
     }
 }
