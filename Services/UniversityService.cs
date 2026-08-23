@@ -86,7 +86,7 @@ namespace UNIOOP.App.Services
 
             await _universityRepository.AddAsync(university);
             await _universityRepository.SaveChangesAsync();
-            _cacheService.Remove("Universities:All");
+            await _cacheService.RemoveAsync("Universities:All");
 
             return await GetSingleAsync(university.UniversityID);
         }
@@ -108,8 +108,8 @@ namespace UNIOOP.App.Services
             existingUniversity.UniversityName = normalizedName;
 
             await _universityRepository.SaveChangesAsync();
-            _cacheService.Remove($"University:{universityId}");
-            _cacheService.Remove("Universities:All");
+            await _cacheService.RemoveAsync($"University:{universityId}");
+            await _cacheService.RemoveAsync("Universities:All");
         }
 
         public async Task DeleteAsync(int universityId)
@@ -126,8 +126,8 @@ namespace UNIOOP.App.Services
 
             _universityRepository.Remove(existingUniversity);
             await _universityRepository.SaveChangesAsync();
-            _cacheService.Remove($"University:{universityId}");
-            _cacheService.Remove("Universities:All");
+            await _cacheService.RemoveAsync($"University:{universityId}");
+            await _cacheService.RemoveAsync("Universities:All");
         }
     }
 }

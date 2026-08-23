@@ -94,7 +94,7 @@ namespace UNIOOP.App.Services
             await _governmentOfficerRepository.AddAsync(governmentOfficer);
             await _governmentOfficerRepository.SaveChangesAsync();
 
-            _cacheService.Remove("GovernmentOfficers:All");
+            await _cacheService.RemoveAsync("GovernmentOfficers:All");
 
             return await GetSingleAsync(governmentOfficer.OfficerID);
         }
@@ -120,8 +120,8 @@ namespace UNIOOP.App.Services
 
             await _governmentOfficerRepository.SaveChangesAsync();
 
-            _cacheService.Remove($"GovernmentOfficer:{governmentOfficerId}");
-            _cacheService.Remove("GovernmentOfficers:All");
+            await _cacheService.RemoveAsync($"GovernmentOfficer:{governmentOfficerId}");
+            await _cacheService.RemoveAsync("GovernmentOfficers:All");
         }
 
         public async Task DeleteAsync(int governmentOfficerId)
@@ -138,8 +138,8 @@ namespace UNIOOP.App.Services
 
             await _governmentOfficerRepository.SaveChangesAsync();
 
-            _cacheService.Remove($"GovernmentOfficer:{governmentOfficerId}");
-            _cacheService.Remove("GovernmentOfficers:All");
+            await _cacheService.RemoveAsync($"GovernmentOfficer:{governmentOfficerId}");
+            await _cacheService.RemoveAsync("GovernmentOfficers:All");
         }
     }
 }

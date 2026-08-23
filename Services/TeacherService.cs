@@ -97,7 +97,7 @@ namespace UNIOOP.App.Services
             await _teacherRepository.AddAsync(teacher);
             await _teacherRepository.SaveChangesAsync();
 
-            _cacheService.Remove("Teachers:All");
+            await _cacheService.RemoveAsync("Teachers:All");
 
             return await GetSingleAsync(teacher.TeacherID);
         }
@@ -127,8 +127,8 @@ namespace UNIOOP.App.Services
 
             await _teacherRepository.SaveChangesAsync();
 
-            _cacheService.Remove($"Teacher:{teacherId}");
-            _cacheService.Remove("Teachers:All");
+            await _cacheService.RemoveAsync($"Teacher:{teacherId}");
+            await _cacheService.RemoveAsync("Teachers:All");
         }
 
         public async Task DeleteAsync(int teacherId)
@@ -143,8 +143,8 @@ namespace UNIOOP.App.Services
             _teacherRepository.Remove(existingTeacher);
             await _teacherRepository.SaveChangesAsync();
 
-            _cacheService.Remove($"Teacher:{teacherId}");
-            _cacheService.Remove("Teachers:All");
+            await _cacheService.RemoveAsync($"Teacher:{teacherId}");
+            await _cacheService.RemoveAsync("Teachers:All");
         }
     }
 }

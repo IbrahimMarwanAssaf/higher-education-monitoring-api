@@ -130,9 +130,9 @@ namespace UNIOOP.App.Services
             await _enrollmentRepository.AddAsync(enrollment);
             await _enrollmentRepository.SaveChangesAsync();
 
-            _cacheService.Remove($"Enrollment:{dto.StudentID}:{dto.CourseID}");
-            _cacheService.Remove($"StudentCourses:{dto.StudentID}");
-            _cacheService.Remove($"CourseStudents:{dto.CourseID}");
+            await _cacheService.RemoveAsync($"Enrollment:{dto.StudentID}:{dto.CourseID}");
+            await _cacheService.RemoveAsync($"StudentCourses:{dto.StudentID}");
+            await _cacheService.RemoveAsync($"CourseStudents:{dto.CourseID}");
 
             return await GetSingleAsync(dto.StudentID, dto.CourseID);
         }
@@ -150,9 +150,9 @@ namespace UNIOOP.App.Services
             _enrollmentRepository.Remove(enrollment);
             await _enrollmentRepository.SaveChangesAsync();
 
-            _cacheService.Remove($"Enrollment:{studentId}:{courseId}");
-            _cacheService.Remove($"StudentCourses:{studentId}");
-            _cacheService.Remove($"CourseStudents:{courseId}");
+            await _cacheService.RemoveAsync($"Enrollment:{studentId}:{courseId}");
+            await _cacheService.RemoveAsync($"StudentCourses:{studentId}");
+            await _cacheService.RemoveAsync($"CourseStudents:{courseId}");
         }
     }
 }

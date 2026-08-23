@@ -16,11 +16,11 @@ namespace UNIOOP.App.Caching
 
         public async Task<T?> GetOrCreateAsync<T>(string key, Func<Task<T?>> factory)
         {
-            T? cashedValue = _memoryCache.Get<T>(key);
+            T? cachedValue = _memoryCache.Get<T>(key);
 
-            if (cashedValue is not null)
+            if (cachedValue is not null)
             {
-                return cashedValue;
+                return cachedValue;
             }
 
             SemaphoreSlim semaphore = GetSemaphore(key);
@@ -29,11 +29,11 @@ namespace UNIOOP.App.Caching
 
             try
             {
-                cashedValue = _memoryCache.Get<T>(key);
+                cachedValue = _memoryCache.Get<T>(key);
 
-                if (cashedValue is not null)
+                if (cachedValue is not null)
                 {
-                    return cashedValue;
+                    return cachedValue;
                 }
 
                 T? value = await factory();
@@ -52,10 +52,12 @@ namespace UNIOOP.App.Caching
             }
         }
 
-        public void Remove(string key)
+        public async Task RemoveAsync(string key)
         {
             SemaphoreSlim semaphore = GetSemaphore(key);
-            semaphore.Wait();
+
+            await semaphore.WaitAsync();
+
             try
             {
                 _memoryCache.Remove(key);
