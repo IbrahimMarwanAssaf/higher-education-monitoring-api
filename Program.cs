@@ -12,6 +12,11 @@ using UNIOOP.App.Services.Interfaces;
 using UNIOOP.App.Filters;
 using UNIOOP.App.Middleware;
 using UNIOOP.App.Caching;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.Identity;
+using UNIOOP.App.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,6 +59,7 @@ builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
 builder.Services.AddScoped<IStudentRepository, StudentRepository>();
 builder.Services.AddScoped<IUniversityRepository, UniversityRepository>();
 builder.Services.AddScoped<IPersonnelRepository, PersonnelRepository>();
+builder.Services.AddScoped<IUserAccountRepository, UserAccountRepository>();
 
 builder.Services.AddScoped<IUniversityService, UniversityService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
@@ -61,6 +67,11 @@ builder.Services.AddScoped<ITeacherService, TeacherService>();
 builder.Services.AddScoped<IGovernmentOfficerService, GovernmentOfficerService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddScoped<PasswordHasher<UserAccount>>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+
 
 builder.Services.AddScoped<ExceptionHelper>();
 builder.Services.AddScoped<AuditDeleteFilter>();
@@ -76,6 +87,21 @@ builder.Services.AddSingleton<IInMemoryCacheService, InMemoryCacheService>();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidAudience = builder.Configuration["Jwt:Audience"]
+            };
+        });
 
 var app = builder.Build();
 app.UseExceptionHandler();
@@ -105,6 +131,7 @@ else
     app.UseHttpsRedirection();
 }
 
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

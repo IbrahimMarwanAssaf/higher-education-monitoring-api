@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UNIOOP.App.Data;
@@ -11,9 +12,11 @@ using UNIOOP.App.Data;
 namespace UniOOP.App.Migrations
 {
     [DbContext(typeof(DataContextEF))]
-    partial class DataContextEFModelSnapshot : ModelSnapshot
+    [Migration("20260826143148_AddUserAccount")]
+    partial class AddUserAccount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -179,9 +182,17 @@ namespace UniOOP.App.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
-                    b.Property<long>("PersonnelID")
+                    b.Property<long?>("PersonnelID")
                         .HasColumnType("bigint")
                         .HasColumnName("personnel_id");
+
+                    b.Property<int?>("UniversityID")
+                        .HasColumnType("integer")
+                        .HasColumnName("university_id");
+
+                    b.Property<int>("UserType")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_type");
 
                     b.HasKey("UserAccountID")
                         .HasName("pk_user_account");
@@ -190,7 +201,14 @@ namespace UniOOP.App.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_user_account_personnel_id");
 
-                    b.ToTable("UserAccount", "public");
+                    b.HasIndex("UniversityID")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_account_university_id");
+
+                    b.ToTable("UserAccount", "public", t =>
+                        {
+                            t.HasCheckConstraint("CK_UserAccount_ExactlyOneOwner", "(\"personnel_id\" IS NOT NULL AND \"university_id\" IS NULL) OR (\"personnel_id\" IS NULL AND \"university_id\" IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("UNIOOP.App.Models.GovernmentOfficer", b =>
@@ -340,10 +358,17 @@ namespace UniOOP.App.Migrations
                         .WithOne()
                         .HasForeignKey("UNIOOP.App.Models.UserAccount", "PersonnelID")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
                         .HasConstraintName("fk_user_account_personnel_personnel_id");
 
+                    b.HasOne("UNIOOP.App.Models.University", "University")
+                        .WithOne()
+                        .HasForeignKey("UNIOOP.App.Models.UserAccount", "UniversityID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_user_account_university_university_id");
+
                     b.Navigation("Personnel");
+
+                    b.Navigation("University");
                 });
 
             modelBuilder.Entity("UNIOOP.App.Models.GovernmentOfficer", b =>
