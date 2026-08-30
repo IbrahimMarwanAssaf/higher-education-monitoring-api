@@ -18,6 +18,8 @@ namespace UNIOOP.App.Data
         public DbSet<Course> Courses => Set<Course>();
         public DbSet<StudentCourse> StudentCourses => Set<StudentCourse>();
 
+        public DbSet<UserAccount> UserAccounts { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
