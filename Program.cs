@@ -18,6 +18,7 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using UNIOOP.App.Models;
 using Microsoft.AspNetCore.Authorization;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +27,8 @@ builder.Services.AddControllers(options =>
     options.Filters.Add(new ProducesAttribute("application/json"));
     options.Filters.Add<ExecutionTimeFilter>();
 });
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddOpenApi();
 
 builder.Services.AddCors((options) =>
 {
@@ -130,8 +132,8 @@ if (app.Environment.IsDevelopment())
     // Inserts test data if it has not already been inserted.
     await HigherEducationDbSeeder.SeedAsync(context);
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi().AllowAnonymous();
+    app.MapScalarApiReference().AllowAnonymous();
 }
 else
 {
