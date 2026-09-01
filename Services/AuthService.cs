@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using UNIOOP.App.Constants;
 using UNIOOP.App.Dtos.Auth;
 using UNIOOP.App.Helpers;
 using UNIOOP.App.Models;
@@ -46,7 +47,7 @@ namespace UNIOOP.App.Services
             var userAccount = new UserAccount
             {
                 PersonnelID = governmentOfficer.PersonnelID,
-                Role = "User"
+                Role = RoleConstants.User
             };
 
             userAccount.PasswordHash = _passwordHasher.HashPassword(userAccount, dto.Password);

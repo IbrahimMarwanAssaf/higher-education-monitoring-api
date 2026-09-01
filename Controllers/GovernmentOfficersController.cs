@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UNIOOP.App.Constants;
 using UNIOOP.App.Dtos.GovernmentOfficers;
 using UNIOOP.App.Filters;
 using UNIOOP.App.Services.Interfaces;
 
 namespace UNIOOP.APP.Controllers;
 
-[Authorize(Roles = "Admin")]
 [ApiController]
 [Route("[controller]")]
 public class GovernmentOfficersController : ControllerBase
@@ -17,6 +17,7 @@ public class GovernmentOfficersController : ControllerBase
         _governmentOfficerService = governmentOfficerService;
     }
 
+    [Authorize(Policy = AuthorizationPolicies.ManagerAccess)]
     [HttpGet("GetAll")]
     public async Task<ActionResult<List<GovernmentOfficerResponseDto>>> GetAll()
     {
@@ -25,6 +26,7 @@ public class GovernmentOfficersController : ControllerBase
         return Ok(governmentOfficers);
     }
 
+    [Authorize(Policy = AuthorizationPolicies.ManagerAccess)]
     [HttpGet("GetSingle/{governmentOfficerId}")]
     public async Task<ActionResult<GovernmentOfficerResponseDto>> GetSingle(int governmentOfficerId)
     {
@@ -33,6 +35,7 @@ public class GovernmentOfficersController : ControllerBase
         return Ok(governmentOfficer);
     }
 
+    [Authorize(Policy = AuthorizationPolicies.ManagerAccess)]
     [HttpPost("Create")]
     public async Task<ActionResult<GovernmentOfficerResponseDto>> Create(CreateGovernmentOfficerDto dto)
     {
@@ -45,6 +48,7 @@ public class GovernmentOfficersController : ControllerBase
         }, governmentOfficer);
     }
 
+    [Authorize(Policy = AuthorizationPolicies.ManagerAccess)]
     [HttpPut("Update/{governmentOfficerId}")]
     public async Task<ActionResult> Update(int governmentOfficerId, UpdateGovernmentOfficerDto dto)
     {
@@ -52,6 +56,7 @@ public class GovernmentOfficersController : ControllerBase
         return NoContent();
     }
 
+    [Authorize(Policy = AuthorizationPolicies.AdminAccess)]
     [ServiceFilter(typeof(AuditDeleteFilter))]
     [HttpDelete("Delete/{governmentOfficerId}")]
     public async Task<ActionResult> Delete(int governmentOfficerId)

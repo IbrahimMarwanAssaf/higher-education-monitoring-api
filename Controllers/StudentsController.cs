@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UNIOOP.App.Constants;
 using UNIOOP.App.Dtos.Students;
 using UNIOOP.App.Filters;
 using UNIOOP.App.Services.Interfaces;
@@ -16,6 +17,7 @@ public class StudentController : ControllerBase
         _studentService = studentService;
     }
 
+    [Authorize(Policy = AuthorizationPolicies.UserAccess)]
     [HttpGet("GetAll")]
     public async Task<ActionResult<List<StudentResponseDto>>> GetAll()
     {
@@ -23,6 +25,7 @@ public class StudentController : ControllerBase
         return Ok(students);
     }
 
+    [Authorize(Policy = AuthorizationPolicies.UserAccess)]
     [HttpGet("GetSingle/{studentId}")]
     public async Task<ActionResult<StudentResponseDto>> GetSingle(int studentId)
     {
@@ -30,7 +33,7 @@ public class StudentController : ControllerBase
         return Ok(student);
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthorizationPolicies.ManagerAccess)]
     [HttpPost("Create")]
     public async Task<ActionResult<StudentResponseDto>> Create(CreateStudentDto dto)
     {
@@ -38,7 +41,7 @@ public class StudentController : ControllerBase
         return CreatedAtAction(nameof(GetSingle), new { studentId = student.StudentID }, student);
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthorizationPolicies.ManagerAccess)]
     [HttpPut("Update/{studentId}")]
     public async Task<ActionResult> Update(int studentId, UpdateStudentDto dto)
     {
@@ -46,7 +49,7 @@ public class StudentController : ControllerBase
         return NoContent();
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthorizationPolicies.AdminAccess)]
     [ServiceFilter(typeof(AuditDeleteFilter))]
     [HttpDelete("Delete/{studentId}")]
     public async Task<ActionResult> Delete(int studentId)
