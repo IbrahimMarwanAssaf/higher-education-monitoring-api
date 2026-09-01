@@ -20,6 +20,7 @@ using UNIOOP.App.Models;
 using Microsoft.AspNetCore.Authorization;
 using Scalar.AspNetCore;
 using Microsoft.OpenApi;
+using UNIOOP.App.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -126,12 +127,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             };
         });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(AuthorizationPolicies.UserAccess, policy =>
+        policy.RequireRole(
+            RoleConstants.User,
+            RoleConstants.Manager,
+            RoleConstants.Admin))
+    .AddPolicy(AuthorizationPolicies.ManagerAccess, policy =>
+        policy.RequireRole(
+            RoleConstants.Manager,
+            RoleConstants.Admin))
+    .AddPolicy(AuthorizationPolicies.AdminAccess, policy =>
+        policy.RequireRole(
+            RoleConstants.Admin))
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
-        .Build();
-});
+        .Build());
 
 var app = builder.Build();
 app.UseExceptionHandler();

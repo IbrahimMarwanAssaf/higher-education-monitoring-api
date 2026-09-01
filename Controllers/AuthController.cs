@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UNIOOP.App.Constants;
 using UNIOOP.App.Dtos.Auth;
 using UNIOOP.App.Services.Interfaces;
 
@@ -15,7 +16,7 @@ namespace UNIOOP.App.Controllers
             _authService = authService;
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = AuthorizationPolicies.AdminAccess)]
         [HttpPost("government-officers-signup")]
         public async Task<IActionResult> SignUp(SignUpDto dto)
         {

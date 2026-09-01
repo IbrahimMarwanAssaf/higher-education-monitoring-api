@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using UNIOOP.App.Models;
+using UNIOOP.App.Constants;
 
 namespace UNIOOP.App.Data.Seed;
 
@@ -15,7 +16,7 @@ public static class HigherEducationDbSeeder
         await strategy.ExecuteAsync(async () =>
         {
             bool adminExists = await context.UserAccounts
-                .AnyAsync(user => user.Role == "Admin", cancellationToken);
+                .AnyAsync(user => user.Role == RoleConstants.Admin, cancellationToken);
 
             if (adminExists)
             {
@@ -271,7 +272,7 @@ public static class HigherEducationDbSeeder
             var adminAccount = new UserAccount
             {
                 PersonnelID = officer1.PersonnelID,
-                Role = "Admin"
+                Role = RoleConstants.Admin
             };
 
             adminAccount.PasswordHash = passwordHasher.HashPassword(

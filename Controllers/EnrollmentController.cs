@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.Enrollments;
 using UNIOOP.App.Filters;
 using UNIOOP.App.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using UNIOOP.App.Constants;
 
 namespace UNIOOP.App.Controllers
 {
@@ -16,6 +18,7 @@ namespace UNIOOP.App.Controllers
             _enrollmentService = enrollmentService;
         }
 
+        [Authorize(Policy = AuthorizationPolicies.UserAccess)]
         [HttpGet("GetSingle/{studentId}/{courseId}")]
         public async Task<ActionResult<EnrollmentResponseDto>> GetSingle(int studentId, int courseId)
         {
@@ -23,6 +26,7 @@ namespace UNIOOP.App.Controllers
             return Ok(enrollment);
         }
 
+        [Authorize(Policy = AuthorizationPolicies.UserAccess)]
         [HttpGet("GetStudentCourses/{studentId}")]
         public async Task<ActionResult<List<EnrollmentResponseDto>>> GetStudentCourses(int studentId)
         {
@@ -30,6 +34,7 @@ namespace UNIOOP.App.Controllers
             return Ok(enrollments);
         }
 
+        [Authorize(Policy = AuthorizationPolicies.UserAccess)]
         [HttpGet("GetCourseStudents/{courseId}")]
         public async Task<ActionResult<List<EnrollmentResponseDto>>> GetCourseStudents(int courseId)
         {
@@ -37,6 +42,7 @@ namespace UNIOOP.App.Controllers
             return Ok(enrollments);
         }
 
+        [Authorize(Policy = AuthorizationPolicies.ManagerAccess)]
         [HttpPost("Enroll")]
         public async Task<ActionResult<EnrollmentResponseDto>> Enroll(CreateEnrollmentDto dto)
         {
@@ -46,6 +52,7 @@ namespace UNIOOP.App.Controllers
                 new { studentId = enrollment.StudentID, courseId = enrollment.CourseID }, enrollment);
         }
 
+        [Authorize(Policy = AuthorizationPolicies.AdminAccess)]
         [ServiceFilter(typeof(AuditDeleteFilter))]
         [HttpDelete("Unenroll/{studentId}/{courseId}")]
         public async Task<IActionResult> Unenroll(int studentId, int courseId)
