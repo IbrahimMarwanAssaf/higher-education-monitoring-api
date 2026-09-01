@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.Auth;
 using UNIOOP.App.Services.Interfaces;
@@ -14,16 +15,18 @@ namespace UNIOOP.App.Controllers
             _authService = authService;
         }
 
-        [HttpPost("signup")]
+        [Authorize(Roles = "Admin")]
+        [HttpPost("government-officers-signup")]
         public async Task<IActionResult> SignUp(SignUpDto dto)
         {
-            await _authService.SignUpAsync(dto);
+            await _authService.CreateGovernmentOfficerAccountAsync(dto);
             return Ok(new
             {
                 message = "Account created successfully."
             });
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponseDto>> Login(LoginDto dto)
         {

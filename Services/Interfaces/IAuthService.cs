@@ -4,7 +4,7 @@ namespace UNIOOP.App.Services.Interfaces
 {
     public interface IAuthService
     {
-        Task SignUpAsync(SignUpDto dto);
+        Task CreateGovernmentOfficerAccountAsync(SignUpDto dto);
         Task<LoginResponseDto> LoginAsync(LoginDto dto);
     }
 }
