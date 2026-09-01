@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using UNIOOP.App.Models;
 
 namespace UNIOOP.App.Data.Seed;
@@ -13,15 +14,10 @@ public static class HigherEducationDbSeeder
 
         await strategy.ExecuteAsync(async () =>
         {
-            // Prevent duplicate seeding.
-            bool alreadySeeded = await context.Universities
-            .AnyAsync(
-                university =>
-                    university.UniversityName ==
-                    "Jordan University of Science and Technology",
-                cancellationToken);
+            bool adminExists = await context.UserAccounts
+                .AnyAsync(user => user.Role == "Admin", cancellationToken);
 
-            if (alreadySeeded)
+            if (adminExists)
             {
                 return;
             }
@@ -267,6 +263,22 @@ public static class HigherEducationDbSeeder
             context.GovernmentOfficers.AddRange(
                 officer1,
                 officer2);
+
+            await context.SaveChangesAsync(cancellationToken);
+
+            var passwordHasher = new PasswordHasher<UserAccount>();
+
+            var adminAccount = new UserAccount
+            {
+                PersonnelID = officer1.PersonnelID,
+                Role = "Admin"
+            };
+
+            adminAccount.PasswordHash = passwordHasher.HashPassword(
+                adminAccount,
+                "TestPassword123!");
+
+            context.UserAccounts.Add(adminAccount);
 
             await context.SaveChangesAsync(cancellationToken);
 

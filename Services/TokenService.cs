@@ -15,11 +15,12 @@ namespace UNIOOP.App.Services
             _configuration = configuration;
         }
 
-        public string GenerateAccessToken(long personnelId)
+        public string GenerateAccessToken(long personnelId, string role)
         {
             var claims = new List<Claim>
             {
-                new(JwtRegisteredClaimNames.Sub, personnelId.ToString())
+                new(JwtRegisteredClaimNames.Sub, personnelId.ToString()),
+                new(ClaimTypes.Role, role)
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));

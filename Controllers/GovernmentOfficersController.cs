@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.GovernmentOfficers;
 using UNIOOP.App.Filters;
@@ -5,6 +6,7 @@ using UNIOOP.App.Services.Interfaces;
 
 namespace UNIOOP.APP.Controllers;
 
+[Authorize(Roles = "Admin")]
 [ApiController]
 [Route("[controller]")]
 public class GovernmentOfficersController : ControllerBase
@@ -49,6 +51,7 @@ public class GovernmentOfficersController : ControllerBase
         await _governmentOfficerService.UpdateAsync(governmentOfficerId, dto);
         return NoContent();
     }
+
     [ServiceFilter(typeof(AuditDeleteFilter))]
     [HttpDelete("Delete/{governmentOfficerId}")]
     public async Task<ActionResult> Delete(int governmentOfficerId)
@@ -56,5 +59,4 @@ public class GovernmentOfficersController : ControllerBase
         await _governmentOfficerService.DeleteAsync(governmentOfficerId);
         return NoContent();
     }
-
 }

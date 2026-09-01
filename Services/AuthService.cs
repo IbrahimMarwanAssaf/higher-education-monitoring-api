@@ -25,7 +25,7 @@ namespace UNIOOP.App.Services
             _tokenService = tokenService;
         }
 
-        public async Task SignUpAsync(SignUpDto dto)
+        public async Task CreateGovernmentOfficerAccountAsync(SignUpDto dto)
         {
             var governmentOfficer = await _userAccountRepository
                 .GetGovernmentOfficerByEmailAsync(dto.Email);
@@ -45,7 +45,8 @@ namespace UNIOOP.App.Services
 
             var userAccount = new UserAccount
             {
-                PersonnelID = governmentOfficer.PersonnelID
+                PersonnelID = governmentOfficer.PersonnelID,
+                Role = "User"
             };
 
             userAccount.PasswordHash = _passwordHasher.HashPassword(userAccount, dto.Password);
@@ -74,7 +75,7 @@ namespace UNIOOP.App.Services
 
             return new LoginResponseDto
             {
-                AccessToken = _tokenService.GenerateAccessToken(userAccount.PersonnelID)
+                AccessToken = _tokenService.GenerateAccessToken(userAccount.PersonnelID, userAccount.Role)
             };
         }
     }

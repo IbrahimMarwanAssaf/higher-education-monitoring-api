@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UNIOOP.App.Dtos.Courses;
 using UNIOOP.App.Filters;
@@ -29,6 +30,7 @@ public class CourseController : ControllerBase
         return Ok(course);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost("Create")]
     public async Task<ActionResult<CourseResponseDto>> Create(CreateCourseDto dto)
     {
@@ -36,6 +38,7 @@ public class CourseController : ControllerBase
         return CreatedAtAction(nameof(GetSingle), new { courseId = course.CourseID }, course);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("Update/{courseId}")]
     public async Task<ActionResult> Update(int courseId, UpdateCourseDto dto)
     {
@@ -43,6 +46,7 @@ public class CourseController : ControllerBase
         return NoContent();
     }
 
+    [Authorize(Roles = "Admin")]
     [ServiceFilter(typeof(AuditDeleteFilter))]
     [HttpDelete("Delete/{courseId}")]
     public async Task<ActionResult> Delete(int courseId)
