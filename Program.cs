@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Identity;
 using UNIOOP.App.Models;
 using Microsoft.AspNetCore.Authorization;
 using Scalar.AspNetCore;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,7 +29,26 @@ builder.Services.AddControllers(options =>
     options.Filters.Add<ExecutionTimeFilter>();
 });
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Components ??= new OpenApiComponents();
+
+        document.Components.SecuritySchemes ??=
+            new Dictionary<string, IOpenApiSecurityScheme>();
+
+        document.Components.SecuritySchemes["Bearer"] =
+            new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT"
+            };
+
+        return Task.CompletedTask;
+    });
+});
 
 builder.Services.AddCors((options) =>
 {
