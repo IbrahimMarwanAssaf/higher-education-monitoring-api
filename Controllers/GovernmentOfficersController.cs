@@ -35,7 +35,7 @@ public class GovernmentOfficersController : ControllerBase
         return Ok(governmentOfficer);
     }
 
-    [Authorize(Policy = AuthorizationPolicies.ManagerAccess)]
+    [Authorize(Policy = AuthorizationPolicies.AdminAccess)]
     [HttpPost("Create")]
     public async Task<ActionResult<GovernmentOfficerResponseDto>> Create(CreateGovernmentOfficerDto dto)
     {
@@ -48,7 +48,7 @@ public class GovernmentOfficersController : ControllerBase
         }, governmentOfficer);
     }
 
-    [Authorize(Policy = AuthorizationPolicies.ManagerAccess)]
+    [Authorize(Policy = AuthorizationPolicies.AdminAccess)]
     [HttpPut("Update/{governmentOfficerId}")]
     public async Task<ActionResult> Update(int governmentOfficerId, UpdateGovernmentOfficerDto dto)
     {

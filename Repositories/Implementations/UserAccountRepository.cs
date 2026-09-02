@@ -25,11 +25,6 @@ namespace UNIOOP.App.Repositories.Implementations
             return await _context.UserAccounts.FirstOrDefaultAsync(u => u.PersonnelID == personnelId);
         }
 
-        public async Task<GovernmentOfficer?> GetGovernmentOfficerByEmailAsync(string email)
-        {
-            return await _context.GovernmentOfficers.FirstOrDefaultAsync(g => EF.Functions.ILike(g.Email, email));
-        }
-
         public async Task AddAsync(UserAccount userAccount)
         {
             await _context.UserAccounts.AddAsync(userAccount);

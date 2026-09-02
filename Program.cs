@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Authorization;
 using Scalar.AspNetCore;
 using Microsoft.OpenApi;
 using UNIOOP.App.Constants;
+using UNIOOP.App.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,6 +77,8 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<MappingProfile>();
 });
 
+builder.Services.Configure<InitialSuperAdminOptions>(builder.Configuration.GetSection("InitialSuperAdmin"));
+
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IGovernmentOfficerRepository, GovernmentOfficerRepository>();
@@ -93,9 +96,11 @@ builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
 builder.Services.AddScoped<PasswordHasher<UserAccount>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-
 
 builder.Services.AddScoped<ExceptionHelper>();
 builder.Services.AddScoped<AuditDeleteFilter>();
@@ -132,14 +137,20 @@ builder.Services.AddAuthorizationBuilder()
         policy.RequireRole(
             RoleConstants.User,
             RoleConstants.Manager,
-            RoleConstants.Admin))
+            RoleConstants.Admin,
+            RoleConstants.SuperAdmin))
     .AddPolicy(AuthorizationPolicies.ManagerAccess, policy =>
         policy.RequireRole(
             RoleConstants.Manager,
-            RoleConstants.Admin))
+            RoleConstants.Admin,
+            RoleConstants.SuperAdmin))
     .AddPolicy(AuthorizationPolicies.AdminAccess, policy =>
         policy.RequireRole(
-            RoleConstants.Admin))
+            RoleConstants.Admin,
+            RoleConstants.SuperAdmin))
+    .AddPolicy(AuthorizationPolicies.SuperAdminAccess, policy =>
+        policy.RequireRole(
+            RoleConstants.SuperAdmin))
     .SetFallbackPolicy(new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build());
@@ -157,11 +168,12 @@ if (app.Environment.IsDevelopment())
         scope.ServiceProvider
             .GetRequiredService<DataContextEF>();
 
-    // Applies any pending migrations.
+
+    var superAdminOptions = builder.Configuration.GetSection("InitialSuperAdmin").Get<InitialSuperAdminOptions>()!;
+
     await context.Database.MigrateAsync();
 
-    // Inserts test data if it has not already been inserted.
-    await HigherEducationDbSeeder.SeedAsync(context);
+    await HigherEducationDbSeeder.SeedAsync(context, superAdminOptions);
 
     app.MapOpenApi().AllowAnonymous();
     app.MapScalarApiReference().AllowAnonymous();

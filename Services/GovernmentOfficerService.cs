@@ -1,5 +1,7 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using UNIOOP.App.Caching;
+using UNIOOP.App.Constants;
 using UNIOOP.App.Dtos.GovernmentOfficers;
 using UNIOOP.App.Helpers;
 using UNIOOP.App.Models;
@@ -14,16 +16,25 @@ namespace UNIOOP.App.Services
         private readonly ExceptionHelper _exceptionHelper;
         private readonly IMapper _mapper;
         private readonly IInMemoryCacheService _cacheService;
+        private readonly IUserAccountRepository _userAccountRepository;
+        private readonly PasswordHasher<UserAccount> _passwordHasher;
+        private readonly ICurrentUserService _currentUserService;
 
         public GovernmentOfficerService(IGovernmentOfficerRepository governmentOfficerRepository,
+            IUserAccountRepository userAccountRepository,
             ExceptionHelper exceptionHelper,
             IInMemoryCacheService cacheService,
-            IMapper mapper)
+            IMapper mapper,
+            PasswordHasher<UserAccount> passwordHasher,
+            ICurrentUserService currentUserService)
         {
             _governmentOfficerRepository = governmentOfficerRepository;
             _exceptionHelper = exceptionHelper;
             _mapper = mapper;
             _cacheService = cacheService;
+            _userAccountRepository = userAccountRepository;
+            _passwordHasher = passwordHasher;
+            _currentUserService = currentUserService;
         }
 
         public async Task<List<GovernmentOfficerResponseDto>> GetAllAsync()
@@ -73,9 +84,11 @@ namespace UNIOOP.App.Services
             return governmentOfficer;
         }
 
-        public async Task<GovernmentOfficerResponseDto> CreateAsync(
-            CreateGovernmentOfficerDto dto)
+        public async Task<GovernmentOfficerResponseDto> CreateAsync(CreateGovernmentOfficerDto dto)
         {
+            ValidateRequestedRole(dto.Role);
+            ValidateRoleAssignment(dto.Role);
+
             string normalizedSsn = InputNormalizationHelper.NormalizeText(dto.SSN);
             string normalizedEmail = InputNormalizationHelper.NormalizeEmail(dto.Email);
 
@@ -91,7 +104,17 @@ namespace UNIOOP.App.Services
                 Email = normalizedEmail
             };
 
+            var userAccount = new UserAccount
+            {
+                Personnel = governmentOfficer,
+                Role = dto.Role
+            };
+
+            userAccount.PasswordHash = _passwordHasher.HashPassword(userAccount, dto.Password);
+
             await _governmentOfficerRepository.AddAsync(governmentOfficer);
+            await _userAccountRepository.AddAsync(userAccount);
+
             await _governmentOfficerRepository.SaveChangesAsync();
 
             await _cacheService.RemoveAsync("GovernmentOfficers:All");
@@ -140,6 +163,24 @@ namespace UNIOOP.App.Services
 
             await _cacheService.RemoveAsync($"GovernmentOfficer:{governmentOfficerId}");
             await _cacheService.RemoveAsync("GovernmentOfficers:All");
+        }
+
+        private void ValidateRequestedRole(string role)
+        {
+            if (role != RoleConstants.User && role != RoleConstants.Manager && role != RoleConstants.Admin)
+            {
+                throw _exceptionHelper.BadRequest("Invalid role. Allowed roles are User, Manager, or Admin.");
+            }
+        }
+
+        private void ValidateRoleAssignment(string requestedRole)
+        {
+            string? currentRole = _currentUserService.Role;
+
+            if (currentRole == RoleConstants.Admin && requestedRole == RoleConstants.Admin)
+            {
+                throw _exceptionHelper.BadRequest("An Admin cannot create another Admin.");
+            }
         }
     }
 }
