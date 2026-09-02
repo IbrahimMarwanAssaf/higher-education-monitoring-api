@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Identity;
-using UNIOOP.App.Constants;
 using UNIOOP.App.Dtos.Auth;
 using UNIOOP.App.Helpers;
 using UNIOOP.App.Models;
@@ -24,36 +23,6 @@ namespace UNIOOP.App.Services
             _exceptionHelper = exceptionHelper;
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
-        }
-
-        public async Task CreateGovernmentOfficerAccountAsync(SignUpDto dto)
-        {
-            var governmentOfficer = await _userAccountRepository
-                .GetGovernmentOfficerByEmailAsync(dto.Email);
-
-            if (governmentOfficer is null)
-            {
-                throw _exceptionHelper.NotFound("Government Officer", dto.Email);
-            }
-
-            var existingAccount = await _userAccountRepository
-                .GetByPersonnelIdAsync(governmentOfficer.PersonnelID);
-
-            if (existingAccount is not null)
-            {
-                throw _exceptionHelper.Conflict("This Government Officer already has an account.");
-            }
-
-            var userAccount = new UserAccount
-            {
-                PersonnelID = governmentOfficer.PersonnelID,
-                Role = RoleConstants.User
-            };
-
-            userAccount.PasswordHash = _passwordHasher.HashPassword(userAccount, dto.Password);
-
-            await _userAccountRepository.AddAsync(userAccount);
-            await _userAccountRepository.SaveChangesAsync();
         }
 
         public async Task<LoginResponseDto> LoginAsync(LoginDto dto)

@@ -2,21 +2,21 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using UNIOOP.App.Models;
 using UNIOOP.App.Constants;
+using UNIOOP.App.Options;
 
 namespace UNIOOP.App.Data.Seed;
 
 public static class HigherEducationDbSeeder
 {
-    public static async Task SeedAsync(
-        DataContextEF context,
-        CancellationToken cancellationToken = default)
+    public static async Task SeedAsync(DataContextEF context, InitialSuperAdminOptions superAdminOptions,
+     CancellationToken cancellationToken = default)
     {
         var strategy = context.Database.CreateExecutionStrategy();
 
         await strategy.ExecuteAsync(async () =>
         {
             bool adminExists = await context.UserAccounts
-                .AnyAsync(user => user.Role == RoleConstants.Admin, cancellationToken);
+                .AnyAsync(user => user.Role == RoleConstants.SuperAdmin, cancellationToken);
 
             if (adminExists)
             {
@@ -245,42 +245,29 @@ public static class HigherEducationDbSeeder
 
             var officer1 = new GovernmentOfficer
             {
-                SSN = "9000000001",
-                FName = "Mariam",
-                LName = "Saleh",
-                DateOfBirth = new DateOnly(1980, 5, 14),
-                Email = "mariam.saleh@mohe.gov.jo"
+                SSN = "2000265021",
+                FName = "Ibrahim",
+                LName = "Assaf",
+                DateOfBirth = new DateOnly(2001, 3, 27),
+                Email = superAdminOptions.Email
             };
 
-            var officer2 = new GovernmentOfficer
-            {
-                SSN = "9000000002",
-                FName = "Samer",
-                LName = "Khatib",
-                DateOfBirth = new DateOnly(1977, 9, 20),
-                Email = "samer.khatib@mohe.gov.jo"
-            };
 
-            context.GovernmentOfficers.AddRange(
-                officer1,
-                officer2);
+            context.GovernmentOfficers.Add(officer1);
 
             await context.SaveChangesAsync(cancellationToken);
 
             var passwordHasher = new PasswordHasher<UserAccount>();
 
-            var adminAccount = new UserAccount
+            var superAdminAccount = new UserAccount
             {
                 PersonnelID = officer1.PersonnelID,
-                Role = RoleConstants.Admin
+                Role = RoleConstants.SuperAdmin
             };
 
-            adminAccount.PasswordHash = passwordHasher.HashPassword(
-                adminAccount,
-                "TestPassword123!");
+            superAdminAccount.PasswordHash = passwordHasher.HashPassword(superAdminAccount, superAdminOptions.Password);
 
-            context.UserAccounts.Add(adminAccount);
-
+            context.UserAccounts.Add(superAdminAccount);
             await context.SaveChangesAsync(cancellationToken);
 
             // =================================================
