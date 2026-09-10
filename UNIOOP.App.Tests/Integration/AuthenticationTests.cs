@@ -1,7 +1,8 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using UNIOOP.App.Dtos.Auth;
-using System.Net.Http.Headers;
+using UNIOOP.App.Tests.Integration.Infrastructure;
 
 namespace UNIOOP.App.Tests.Integration
 {
@@ -20,20 +21,23 @@ namespace UNIOOP.App.Tests.Integration
             // Arrange
             var loginDto = new LoginDto
             {
-                Email = "ibrahim@simplify9.com",
-                Password = "TestPassword123!"
+                Email = "superadmin@test.local",
+                Password = "IntegrationTestPassword123!"
             };
 
             // Act
-            var response = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
+            var response =
+                await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
+            var loginResponse =
+                await response.Content.ReadFromJsonAsync<LoginResponseDto>();
 
             Assert.NotNull(loginResponse);
-            Assert.False(string.IsNullOrWhiteSpace(loginResponse.AccessToken));
+            Assert.False(
+                string.IsNullOrWhiteSpace(loginResponse.AccessToken));
         }
 
         [Fact]
@@ -42,12 +46,13 @@ namespace UNIOOP.App.Tests.Integration
             // Arrange
             var loginDto = new LoginDto
             {
-                Email = "ibrahim@simplify9.com",
+                Email = "superadmin@test.local",
                 Password = "WrongPassword123!"
             };
 
             // Act
-            var response = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
+            var response =
+                await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
 
             // Assert
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -60,11 +65,12 @@ namespace UNIOOP.App.Tests.Integration
             var loginDto = new LoginDto
             {
                 Email = "doesnotexist@example.com",
-                Password = "TestPassword123!"
+                Password = "IntegrationTestPassword123!"
             };
 
             // Act
-            var response = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
+            var response =
+                await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
 
             // Assert
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -76,23 +82,33 @@ namespace UNIOOP.App.Tests.Integration
             // Arrange
             var loginDto = new LoginDto
             {
-                Email = "ibrahim@simplify9.com",
-                Password = "TestPassword123!"
+                Email = "superadmin@test.local",
+                Password = "IntegrationTestPassword123!"
             };
 
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
+            var loginResponse =
+                await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
 
             Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
+            var tokenResponse =
+                await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
 
             Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
+            Assert.False(
+                string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
 
-            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
+            // Create an authenticated request
+            using var request =
+                new HttpRequestMessage(HttpMethod.Get, "/University/GetAll");
+
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue(
+                    "Bearer",
+                    tokenResponse.AccessToken);
 
             // Act
-            var response = await _client.GetAsync("/University/GetAll");
+            var response = await _client.SendAsync(request);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
