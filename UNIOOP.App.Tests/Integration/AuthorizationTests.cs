@@ -1,13 +1,11 @@
 using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using UNIOOP.App.Data;
-using UNIOOP.App.Dtos.Auth;
 using UNIOOP.App.Dtos.GovernmentOfficers;
 using UNIOOP.App.Dtos.Universities;
 using UNIOOP.App.Models;
+using UNIOOP.App.Tests.Integration.Helpers;
 using UNIOOP.App.Tests.Integration.Infrastructure;
 
 namespace UNIOOP.App.Tests.Integration
@@ -58,24 +56,13 @@ namespace UNIOOP.App.Tests.Integration
         public async Task AdminEndpoint_UserRole_ReturnsForbidden()
         {
             // Arrange
-            var loginDto = new LoginDto
-            {
-                Email = "user@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "user@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
-
-            using var request = new HttpRequestMessage(HttpMethod.Delete, "/University/Delete/1");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Delete,
+                "/University/Delete/1",
+                token);
 
             // Act
             var response = await _client.SendAsync(request);
@@ -90,24 +77,13 @@ namespace UNIOOP.App.Tests.Integration
             // Arrange
             var universityId = await CreateTestUniversityAsync();
 
-            var loginDto = new LoginDto
-            {
-                Email = "admin@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "admin@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
-
-            using var request = new HttpRequestMessage(HttpMethod.Delete, $"/University/Delete/{universityId}");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Delete,
+                $"/University/Delete/{universityId}",
+                token);
 
             // Act
             var response = await _client.SendAsync(request);
@@ -120,24 +96,13 @@ namespace UNIOOP.App.Tests.Integration
         public async Task AdminEndpoint_ManagerRole_ReturnsForbidden()
         {
             // Arrange
-            var loginDto = new LoginDto
-            {
-                Email = "manager@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "manager@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
-
-            using var request = new HttpRequestMessage(HttpMethod.Delete, "/University/Delete/1");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Delete,
+                "/University/Delete/1",
+                token);
 
             // Act
             var response = await _client.SendAsync(request);
@@ -152,24 +117,13 @@ namespace UNIOOP.App.Tests.Integration
             // Arrange
             var universityId = await CreateTestUniversityAsync();
 
-            var loginDto = new LoginDto
-            {
-                Email = "superadmin@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "superadmin@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
-
-            using var request = new HttpRequestMessage(HttpMethod.Delete, $"/University/Delete/{universityId}");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Delete,
+                $"/University/Delete/{universityId}",
+                token);
 
             // Act
             var response = await _client.SendAsync(request);
@@ -182,64 +136,42 @@ namespace UNIOOP.App.Tests.Integration
         public async Task ManagerEndpoint_UserRole_ReturnsForbidden()
         {
             // Arrange
-            var loginDto = new LoginDto
-            {
-                Email = "user@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "user@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
-
-            using var request = new HttpRequestMessage(HttpMethod.Post, "/University/Create");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
-
-            request.Content = JsonContent.Create(new UniversityCreateUpdateDto
-            {
-                UniversityName = "Unauthorized Test University"
-            });
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Post,
+                "/University/Create",
+                token,
+                new UniversityCreateUpdateDto
+                {
+                    UniversityName = "Unauthorized Test University"
+                });
 
             // Act
             var response = await _client.SendAsync(request);
 
             // Assert
-            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+            Assert.Equal(
+                HttpStatusCode.Forbidden,
+                response.StatusCode);
         }
 
         [Fact]
         public async Task ManagerEndpoint_ManagerRole_IsAllowed()
         {
             // Arrange
-            var loginDto = new LoginDto
-            {
-                Email = "manager@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "manager@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
-
-            using var request = new HttpRequestMessage(HttpMethod.Post, "/University/Create");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
-
-            request.Content = JsonContent.Create(new UniversityCreateUpdateDto
-            {
-                UniversityName = $"Manager Test University {Guid.NewGuid():N}"
-            });
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Post,
+                "/University/Create",
+                token,
+                new UniversityCreateUpdateDto
+                {
+                    UniversityName = $"Manager Test University {Guid.NewGuid():N}"
+                });
 
             // Act
             var response = await _client.SendAsync(request);
@@ -252,29 +184,17 @@ namespace UNIOOP.App.Tests.Integration
         public async Task ManagerEndpoint_AdminRole_IsAllowed()
         {
             // Arrange
-            var loginDto = new LoginDto
-            {
-                Email = "admin@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "admin@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
-
-            using var request = new HttpRequestMessage(HttpMethod.Post, "/University/Create");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
-
-            request.Content = JsonContent.Create(new UniversityCreateUpdateDto
-            {
-                UniversityName = $"Admin Test University {Guid.NewGuid():N}"
-            });
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Post,
+                "/University/Create",
+                token,
+                new UniversityCreateUpdateDto
+                {
+                    UniversityName = $"Admin Test University {Guid.NewGuid():N}"
+                });
 
             // Act
             var response = await _client.SendAsync(request);
@@ -287,29 +207,17 @@ namespace UNIOOP.App.Tests.Integration
         public async Task ManagerEndpoint_SuperAdminRole_IsAllowed()
         {
             // Arrange
-            var loginDto = new LoginDto
-            {
-                Email = "superadmin@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "superadmin@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
-
-            using var request = new HttpRequestMessage(HttpMethod.Post, "/University/Create");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
-
-            request.Content = JsonContent.Create(new UniversityCreateUpdateDto
-            {
-                UniversityName = $"SuperAdmin Test University {Guid.NewGuid():N}"
-            });
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Post,
+                "/University/Create",
+                token,
+                new UniversityCreateUpdateDto
+                {
+                    UniversityName = $"SuperAdmin Test University {Guid.NewGuid():N}"
+                });
 
             // Act
             var response = await _client.SendAsync(request);
@@ -322,20 +230,8 @@ namespace UNIOOP.App.Tests.Integration
         public async Task CreateGovernmentOfficer_AdminRole_AdminRequestingAdminRole_ReturnsBadRequest()
         {
             // Arrange
-            var loginDto = new LoginDto
-            {
-                Email = "admin@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
-
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "admin@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
             var createDto = new CreateGovernmentOfficerDto
             {
@@ -348,11 +244,11 @@ namespace UNIOOP.App.Tests.Integration
                 Role = "Admin"
             };
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, "/GovernmentOfficers/Create");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
-
-            request.Content = JsonContent.Create(createDto);
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Post,
+                "/GovernmentOfficers/Create",
+                token,
+                createDto);
 
             // Act
             var response = await _client.SendAsync(request);
@@ -365,20 +261,8 @@ namespace UNIOOP.App.Tests.Integration
         public async Task CreateGovernmentOfficer_SuperAdminRole_AdminRequestingAdminRole_ReturnsCreated()
         {
             // Arrange
-            var loginDto = new LoginDto
-            {
-                Email = "superadmin@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
-
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "superadmin@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
             var uniqueId = Guid.NewGuid().ToString("N");
 
@@ -393,11 +277,11 @@ namespace UNIOOP.App.Tests.Integration
                 Role = "Admin"
             };
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, "/GovernmentOfficers/Create");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
-
-            request.Content = JsonContent.Create(createDto);
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Post,
+                "/GovernmentOfficers/Create",
+                token,
+                createDto);
 
             // Act
             var response = await _client.SendAsync(request);
@@ -410,20 +294,8 @@ namespace UNIOOP.App.Tests.Integration
         public async Task CreateGovernmentOfficer_AdminRole_UserRole_ReturnsCreated()
         {
             // Arrange
-            var loginDto = new LoginDto
-            {
-                Email = "admin@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
-
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "admin@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
             var uniqueId = Guid.NewGuid().ToString("N");
 
@@ -438,11 +310,11 @@ namespace UNIOOP.App.Tests.Integration
                 Role = "User"
             };
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, "/GovernmentOfficers/Create");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
-
-            request.Content = JsonContent.Create(createDto);
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Post,
+                "/GovernmentOfficers/Create",
+                token,
+                createDto);
 
             // Act
             var response = await _client.SendAsync(request);
@@ -455,20 +327,8 @@ namespace UNIOOP.App.Tests.Integration
         public async Task CreateGovernmentOfficer_AdminRole_ManagerRole_ReturnsCreated()
         {
             // Arrange
-            var loginDto = new LoginDto
-            {
-                Email = "admin@test.local",
-                Password = _configuration["IntegrationTestUsers:Password"]!
-            };
-
-            var loginResponse = await _client.PostAsJsonAsync("/api/Auth/login", loginDto);
-
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-            var tokenResponse = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>();
-
-            Assert.NotNull(tokenResponse);
-            Assert.False(string.IsNullOrWhiteSpace(tokenResponse.AccessToken));
+            var token = await AuthenticationHelper.GetTokenAsync(_client, "admin@test.local",
+                _configuration["IntegrationTestUsers:Password"]!);
 
             var uniqueId = Guid.NewGuid().ToString("N");
 
@@ -483,11 +343,11 @@ namespace UNIOOP.App.Tests.Integration
                 Role = "Manager"
             };
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, "/GovernmentOfficers/Create");
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
-
-            request.Content = JsonContent.Create(createDto);
+            using var request = HttpRequestHelper.CreateAuthenticatedRequest(
+                HttpMethod.Post,
+                "/GovernmentOfficers/Create",
+                token,
+                createDto);
 
             // Act
             var response = await _client.SendAsync(request);
