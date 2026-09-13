@@ -11,7 +11,7 @@ using UNIOOP.App.Repositories.Interfaces;
 using UNIOOP.App.Services;
 using UNIOOP.App.Services.Interfaces;
 
-namespace UNIOOP.App.Tests
+namespace UNIOOP.App.Tests.Unit
 {
     public class GovernmentOfficerServiceTests
     {

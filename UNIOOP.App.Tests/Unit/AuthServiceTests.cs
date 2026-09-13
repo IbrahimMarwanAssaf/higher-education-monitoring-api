@@ -9,7 +9,7 @@ using UNIOOP.App.Services;
 using UNIOOP.App.Services.Interfaces;
 using Xunit;
 
-namespace UNIOOP.App.Tests
+namespace UNIOOP.App.Tests.Unit
 {
     public class AuthServiceTests
     {
