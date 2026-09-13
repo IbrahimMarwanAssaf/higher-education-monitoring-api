@@ -1,0 +1,31 @@
+services:
+
+  app-postgres:
+    image: postgres:18
+    container_name: unioop-app-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${APP_DB_NAME}
+      POSTGRES_USER: ${APP_DB_USER}
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - unioop-app-postgres-data:/var/lib/postgresql
+
+  test-postgres:
+    image: postgres:18
+    container_name: unioop-test-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${TEST_DB_NAME}
+      POSTGRES_USER: ${TEST_DB_USER}
+      POSTGRES_PASSWORD: ${TEST_DB_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - unioop-test-postgres-data:/var/lib/postgresql
+
+volumes:
+  unioop-app-postgres-data:
+  unioop-test-postgres-data:
