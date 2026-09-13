@@ -6,9 +6,7 @@ namespace UNIOOP.App.Tests.Integration.Infrastructure
 {
     public static class IntegrationTestSeeder
     {
-        public static void Seed(
-            DataContextEF context,
-            string testPassword)
+        public static void Seed(DataContextEF context, string testPassword)
         {
             var passwordHasher = new PasswordHasher<UserAccount>();
 
@@ -66,9 +64,7 @@ namespace UNIOOP.App.Tests.Integration.Infrastructure
                     Role = roles[i]
                 };
 
-                account.PasswordHash = passwordHasher.HashPassword(
-                    account,
-                    testPassword);
+                account.PasswordHash = passwordHasher.HashPassword(account, testPassword);
 
                 context.GovernmentOfficers.Add(officer);
                 context.UserAccounts.Add(account);

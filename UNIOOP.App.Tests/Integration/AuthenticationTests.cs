@@ -3,16 +3,21 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using UNIOOP.App.Dtos.Auth;
 using UNIOOP.App.Tests.Integration.Infrastructure;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace UNIOOP.App.Tests.Integration
 {
-    public class AuthenticationTests : IClassFixture<CustomWebApplicationFactory>
+    [Collection("Integration Tests")]
+    public class AuthenticationTests
     {
         private readonly HttpClient _client;
+        private readonly IConfiguration _configuration;
 
         public AuthenticationTests(CustomWebApplicationFactory factory)
         {
             _client = factory.CreateClient();
+            _configuration = factory.Services.GetRequiredService<IConfiguration>();
         }
 
         [Fact]
@@ -22,7 +27,7 @@ namespace UNIOOP.App.Tests.Integration
             var loginDto = new LoginDto
             {
                 Email = "superadmin@test.local",
-                Password = "IntegrationTestPassword123!"
+                Password = _configuration["IntegrationTestUsers:Password"]!
             };
 
             // Act
@@ -65,7 +70,7 @@ namespace UNIOOP.App.Tests.Integration
             var loginDto = new LoginDto
             {
                 Email = "doesnotexist@example.com",
-                Password = "IntegrationTestPassword123!"
+                Password = _configuration["IntegrationTestUsers:Password"]!
             };
 
             // Act
@@ -83,7 +88,7 @@ namespace UNIOOP.App.Tests.Integration
             var loginDto = new LoginDto
             {
                 Email = "superadmin@test.local",
-                Password = "IntegrationTestPassword123!"
+                Password = _configuration["IntegrationTestUsers:Password"]!
             };
 
             var loginResponse =
