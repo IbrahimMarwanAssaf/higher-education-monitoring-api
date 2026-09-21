@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Moq;
+using UniOOP.App.Messaging;
 using UNIOOP.App.Caching;
 using UNIOOP.App.Dtos.GovernmentOfficers;
 using UNIOOP.App.Helpers;
@@ -24,6 +25,7 @@ namespace UNIOOP.App.Tests.Unit.Helpers
         public Mock<IEnrollmentRepository> EnrollmentRepositoryMock { get; }
         public Mock<IInMemoryCacheService> CacheServiceMock { get; }
         public Mock<IMapper> MapperMock { get; }
+        public Mock<IGovernmentOfficerEventPublisher> EventPublisherMock { get; }
         public PasswordHasher<UserAccount> PasswordHasher { get; }
         public GovernmentOfficerService Service { get; }
 
@@ -41,6 +43,9 @@ namespace UNIOOP.App.Tests.Unit.Helpers
             PersonnelRepositoryMock = new Mock<IPersonnelRepository>();
             EnrollmentRepositoryMock = new Mock<IEnrollmentRepository>();
             CacheServiceMock = new Mock<IInMemoryCacheService>();
+
+            EventPublisherMock = new Mock<IGovernmentOfficerEventPublisher>();
+
             MapperMock = new Mock<IMapper>();
             PasswordHasher = new PasswordHasher<UserAccount>();
 
@@ -57,7 +62,8 @@ namespace UNIOOP.App.Tests.Unit.Helpers
                 CacheServiceMock.Object,
                 MapperMock.Object,
                 PasswordHasher,
-                CurrentUserServiceMock.Object);
+                CurrentUserServiceMock.Object,
+                EventPublisherMock.Object);
         }
 
         public void SetupSuccessfulCreate()

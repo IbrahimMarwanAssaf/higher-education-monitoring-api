@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using UniOOP.App.Messaging;
 using UNIOOP.App.Caching;
 using UNIOOP.App.Constants;
 using UNIOOP.App.Dtos.GovernmentOfficers;
@@ -19,6 +20,7 @@ namespace UNIOOP.App.Services
         private readonly IUserAccountRepository _userAccountRepository;
         private readonly PasswordHasher<UserAccount> _passwordHasher;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IGovernmentOfficerEventPublisher _eventPublisher;
 
         public GovernmentOfficerService(IGovernmentOfficerRepository governmentOfficerRepository,
             IUserAccountRepository userAccountRepository,
@@ -26,7 +28,8 @@ namespace UNIOOP.App.Services
             IInMemoryCacheService cacheService,
             IMapper mapper,
             PasswordHasher<UserAccount> passwordHasher,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            IGovernmentOfficerEventPublisher eventPublisher)
         {
             _governmentOfficerRepository = governmentOfficerRepository;
             _exceptionHelper = exceptionHelper;
@@ -35,6 +38,7 @@ namespace UNIOOP.App.Services
             _userAccountRepository = userAccountRepository;
             _passwordHasher = passwordHasher;
             _currentUserService = currentUserService;
+            _eventPublisher = eventPublisher;
         }
 
         public async Task<List<GovernmentOfficerResponseDto>> GetAllAsync()
@@ -116,6 +120,9 @@ namespace UNIOOP.App.Services
             await _userAccountRepository.AddAsync(userAccount);
 
             await _governmentOfficerRepository.SaveChangesAsync();
+
+            await _eventPublisher.PublishCreatedAsync(governmentOfficer.OfficerID,
+                governmentOfficer.Email, userAccount.Role);
 
             await _cacheService.RemoveAsync("GovernmentOfficers:All");
 
