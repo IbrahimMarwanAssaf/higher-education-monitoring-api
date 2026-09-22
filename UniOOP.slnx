@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="UNIOOP.App.Tests/UNIOOP.App.Tests.csproj" />
   <Project Path="UniOOP.App/UniOOP.App.csproj" />
+  <Project Path="UNIOOP.NotificationWorker/UNIOOP.NotificationWorker.csproj" />
 </Solution>

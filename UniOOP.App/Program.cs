@@ -22,8 +22,17 @@ using Scalar.AspNetCore;
 using Microsoft.OpenApi;
 using UNIOOP.App.Constants;
 using UNIOOP.App.Options;
+using UniOOP.App.Configuration;
+using UniOOP.App.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddOptions<RabbitMQOptions>()
+    .Bind(builder.Configuration.GetSection("RabbitMQ"))
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IRabbitMQConnection, RabbitMQConnection>();
+builder.Services.AddSingleton<IGovernmentOfficerEventPublisher, GovernmentOfficerEventPublisher>();
 
 builder.Services.AddControllers(options =>
 {
