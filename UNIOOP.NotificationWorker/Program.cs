@@ -8,9 +8,17 @@ builder.Services.AddOptions<RabbitMQOptions>()
     .Bind(builder.Configuration.GetSection("RabbitMQ"))
     .ValidateOnStart();
 
-builder.Services.AddSingleton<IRabbitMQConnection, RabbitMQConnection>();
+builder.Services.AddOptions<NotificationOptions>()
+    .Bind(builder.Configuration.GetSection("Notification"))
+    .ValidateOnStart();
 
+builder.Services.AddOptions<SmtpOptions>()
+    .Bind(builder.Configuration.GetSection("Smtp"))
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IRabbitMQConnection, RabbitMQConnection>();
 builder.Services.AddSingleton<INotificationConsumer, NotificationConsumer>();
+builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
 
 builder.Services.AddHostedService<Worker>();
 

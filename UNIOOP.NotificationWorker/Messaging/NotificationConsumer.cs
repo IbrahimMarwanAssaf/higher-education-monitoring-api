@@ -6,8 +6,11 @@ using UNIOOP.NotificationWorker.Messaging.Events;
 
 namespace UNIOOP.NotificationWorker.Messaging;
 
-public class NotificationConsumer(IRabbitMQConnection rabbitMQConnection, ILogger<NotificationConsumer> logger) : INotificationConsumer
+public class NotificationConsumer(IRabbitMQConnection rabbitMQConnection, IEmailSender emailSender,
+    ILogger<NotificationConsumer> logger) : INotificationConsumer
 {
+    private readonly IEmailSender _emailSender = emailSender;
+
     private const string ExchangeName = "unioop.events";
     private const string QueueName = "unioop.notification";
     private const string BindingKey = "governmentofficer.created";
@@ -66,8 +69,8 @@ public class NotificationConsumer(IRabbitMQConnection rabbitMQConnection, ILogge
                     return;
                 }
 
-                logger.LogInformation("Notification received for Government Officer {OfficerId}. Email: {Email}, Role: {Role}",
-                    officerEvent.OfficerId, officerEvent.Email, officerEvent.Role);
+                await _emailSender.SendGovernmentOfficerCreatedAsync(officerEvent.OfficerId, officerEvent.Email,
+                    officerEvent.Role, cancellationToken);
 
                 await channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
             }
@@ -87,3 +90,7 @@ public class NotificationConsumer(IRabbitMQConnection rabbitMQConnection, ILogge
         await Task.Delay(Timeout.Infinite, cancellationToken);
     }
 }
+
+
+
+
